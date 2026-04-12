@@ -1,0 +1,3732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HOOPS HEROES</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&display=swap');
+
+  :root {
+    --hoop-orange: #ff6b1a;
+    --hoop-red: #cc2200;
+    --neon-yellow: #f5e642;
+    --score-glow: #ffcc00;
+    --ui-font: 'Bebas Neue', cursive;
+    --body-font: 'Barlow Condensed', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    background: #1a0e05;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: var(--body-font);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #page-scale-wrap {
+    transform-origin: top center;
+  }
+
+  #header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; justify-content: center; width: 660px; }
+
+  h1 {
+    font-family: var(--ui-font);
+    font-size: clamp(38px, 5vw, 62px);
+    color: var(--neon-yellow);
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px rgba(245,230,66,0.5), 0 4px 0 #a08800;
+  }
+
+  #subtitle { font-family: var(--ui-font); font-size: clamp(38px, 5vw, 62px); color: var(--hoop-orange); letter-spacing: 6px; text-shadow: 0 0 20px rgba(255,107,26,0.5), 0 4px 0 #7a3300; }
+
+  #hud { display: flex; gap: 36px; margin-bottom: 10px; align-items: center; }
+
+  .hud-block { text-align: center; }
+
+  .hud-label { font-family: var(--ui-font); font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 3px; display: block; margin-bottom: 2px; }
+
+  .hud-value { font-family: var(--ui-font); font-size: clamp(28px, 4vw, 46px); color: var(--score-glow); text-shadow: 0 0 18px rgba(255,200,0,0.55); line-height: 1; min-width: 60px; display: block; }
+
+  #timer-bar-wrap { width: 180px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 5px; }
+  #timer-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #ff4400, var(--neon-yellow)); border-radius: 4px; transition: width 0.1s linear, background 0.5s; }
+
+  #game-wrap { position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 0 60px rgba(200,100,20,0.3), 0 20px 80px rgba(0,0,0,0.8); border: 2px solid rgba(255,150,40,0.15); }
+
+  canvas { display: block; }
+
+  #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(10,5,0,0.84); backdrop-filter: blur(4px); z-index: 10; transition: opacity 0.3s; }
+  #overlay.hidden { opacity: 0; pointer-events: none; }
+
+  #overlay h2 { font-family: var(--ui-font); font-size: clamp(34px, 6vw, 62px); color: var(--neon-yellow); letter-spacing: 6px; text-shadow: 0 0 30px rgba(245,230,66,0.6); margin-bottom: 8px; }
+  #overlay p { font-size: 15px; color: rgba(255,255,255,0.55); letter-spacing: 2px; margin-bottom: 6px; font-weight: 600; }
+
+  #final-score-display { font-family: var(--ui-font); font-size: 46px; color: var(--hoop-orange); text-shadow: 0 0 20px rgba(255,107,26,0.6); margin: 8px 0 16px; display: none; }
+
+  #final-scoreboard {
+    display: none; flex-direction: row; align-items: stretch; gap: 0;
+    background: #1a1a2e; border: 2px solid #c8980a; border-radius: 10px;
+    overflow: hidden; margin: 12px 0 18px; min-width: 280px;
+    box-shadow: 0 0 30px rgba(200,150,10,0.3);
+  }
+  .sb-team {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 12px 20px;
+  }
+  .sb-team:first-child { border-right: none; }
+  .sb-team-name { font-family: var(--ui-font); font-size: 14px; letter-spacing: 3px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+  .sb-team-label { font-family: var(--ui-font); font-size: 18px; letter-spacing: 2px; margin-bottom: 6px; color: #ffffff; }
+  .sb-score { font-family: var(--ui-font); font-size: 56px; line-height: 1; color: #ffffff; }
+  .sb-winner { font-family: var(--ui-font); font-size: 12px; letter-spacing: 3px; color: var(--neon-yellow); margin-top: 4px; text-shadow: 0 0 10px rgba(245,230,66,0.6); }
+  .sb-divider { display: flex; align-items: center; padding: 0 10px; font-family: var(--ui-font); font-size: 28px; color: #c8980a; }
+
+
+  #start-btn { font-family: var(--ui-font); font-size: 21px; letter-spacing: 5px; background: var(--hoop-orange); color: #fff; border: none; padding: 13px 42px; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 0 var(--hoop-red), 0 0 30px rgba(255,107,26,0.4); transition: transform 0.1s, box-shadow 0.1s; }
+  #start-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--hoop-red), 0 0 40px rgba(255,107,26,0.5); }
+  #start-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--hoop-red); }
+
+  #mode-select { display: flex; gap: 16px; margin-bottom: 4px; }
+  .mode-btn { font-family: var(--ui-font); font-size: 21px; letter-spacing: 5px; background: var(--hoop-orange); color: #fff; border: none; padding: 13px 32px; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 0 var(--hoop-red), 0 0 30px rgba(255,107,26,0.4); transition: transform 0.1s, box-shadow 0.1s; }
+  .mode-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--hoop-red), 0 0 40px rgba(255,107,26,0.5); }
+  .mode-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--hoop-red); }
+
+  #instructions { margin-top: 14px; font-size: 13px; color: rgba(255,255,255,0.32); letter-spacing: 1px; line-height: 2; text-align: center; }
+  #instructions kbd { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); border-radius: 4px; padding: 1px 7px; font-family: var(--body-font); font-size: 12px; color: rgba(255,255,255,0.65); letter-spacing: 0; }
+
+  #combo-toast { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); font-family: var(--ui-font); font-size: 30px; color: var(--neon-yellow); text-shadow: 0 0 20px rgba(245,230,66,0.8); pointer-events: none; opacity: 0; letter-spacing: 4px; z-index: 5; white-space: nowrap; transition: none; }
+
+  #char-select { display: none; flex-direction: column; align-items: center; gap: 10px; margin: 8px 0; }
+  #char-select-title { font-family: var(--ui-font); font-size: 18px; letter-spacing: 4px; color: rgba(255,255,255,0.5); }
+  #char-select-panels { display: flex; gap: 24px; }
+  .char-panel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .char-panel-label { font-family: var(--ui-font); font-size: 13px; letter-spacing: 3px; color: rgba(255,255,255,0.4); }
+  .char-team-name { font-family: var(--ui-font); font-size: 16px; letter-spacing: 3px; color: #ffffff; }
+  .char-row { display: flex; align-items: center; gap: 8px; }
+  .char-arrow { font-family: var(--ui-font); font-size: 22px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s; user-select: none; }
+  .char-arrow:hover { background: rgba(255,255,255,0.18); }
+  .char-canvas { border-radius: 8px; background: #ffffff; border: 2px solid rgba(255,255,255,0.1); }
+  #char-select-btn { font-family: var(--ui-font); font-size: 20px; letter-spacing: 5px; background: var(--hoop-orange); color: #fff; border: none; padding: 11px 36px; border-radius: 8px; cursor: pointer; box-shadow: 0 6px 0 var(--hoop-red), 0 0 30px rgba(255,107,26,0.4); transition: transform 0.1s, box-shadow 0.1s; margin-top: 4px; }
+  #char-select-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 var(--hoop-red), 0 0 40px rgba(255,107,26,0.5); }
+  #char-select-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 var(--hoop-red); }
+
+  #zone-indicator { position: absolute; top: 10px; right: 14px; font-family: var(--ui-font); font-size: 13px; letter-spacing: 2px; color: rgba(255,255,255,0.55); pointer-events: none; text-align: right; line-height: 1.6; }
+
+  /* Touch controls */
+  #touch-controls { display: none; width: 660px; padding: 10px 12px; box-sizing: border-box; flex-direction: column; align-items: center; gap: 20px; margin-top: 6px; }
+  #touch-arrows { display: flex; gap: 32px; width: 100%; justify-content: center; }
+  #touch-actions { display: flex; gap: 32px; width: 100%; justify-content: center; }
+  .touch-btn { font-family: var(--ui-font); font-size: 22px; letter-spacing: 2px; color: #fff; border-radius: 12px; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; flex: 1; }
+  .touch-arrow { background: rgba(255,107,26,0.7); border: 2px solid rgba(255,107,26,0.9); height: 80px; font-size: 36px; max-width: 220px; }
+  .touch-action { background: rgba(255,200,0,0.6); border: 2px solid rgba(255,200,0,0.9); height: 80px; font-size: 28px; max-width: 220px; }
+  .touch-btn:active { opacity: 0.7; transform: scale(0.95); }
+
+  @media (max-width: 700px) {
+    body { justify-content: flex-start; padding-top: 0; overflow: hidden; }
+    #header { width: 100%; justify-content: center; }
+    #page-scale-wrap { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    #game-wrap { transform-origin: top left; border-radius: 0; border-left: none; border-right: none; flex-shrink: 0; }
+    #touch-controls { display: flex; width: 100%; }
+    #controls-hint { display: none; }
+    #instructions { display: none; }
+  }
+
+  #pause-menu { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(3px); z-index: 20; align-items: center; justify-content: center; }
+  #pause-menu.visible { display: flex; }
+  #pause-box { background: #1a1228; border: 2px solid var(--hoop-orange); border-radius: 12px; padding: 32px 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; box-shadow: 0 0 40px rgba(255,107,26,0.4); min-width: 260px; }
+  #pause-title { font-family: var(--ui-font); font-size: 36px; letter-spacing: 6px; color: var(--neon-yellow); text-shadow: 0 0 20px rgba(245,230,66,0.5); margin-bottom: 8px; }
+  #pause-continue { font-family: var(--ui-font); font-size: 18px; letter-spacing: 4px; background: var(--hoop-orange); color: #fff; border: none; padding: 11px 28px; border-radius: 8px; cursor: pointer; width: 100%; box-shadow: 0 4px 0 var(--hoop-red); transition: transform 0.1s; }
+  #pause-continue:hover { transform: translateY(-2px); }
+  #pause-continue:active { transform: translateY(2px); }
+  #pause-menu-btn { font-family: var(--ui-font); font-size: 15px; letter-spacing: 3px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.2); padding: 10px 28px; border-radius: 8px; cursor: pointer; width: 100%; transition: background 0.1s; }
+  #pause-menu-btn:hover { background: rgba(255,255,255,0.16); }
+</style>
+</head>
+<body>
+<div id="page-scale-wrap">
+
+<div id="header">
+  <h1>HOOPS</h1>
+  <span id="subtitle">HEROES</span>
+</div>
+
+<div id="game-wrap">
+  <span id="score-display" style="display:none"></span>
+  <span id="score2-display" style="display:none"></span>
+  <span id="timer-display" style="display:none"></span>
+  <div id="timer-bar-wrap" style="display:none"><div id="timer-bar"></div></div>
+  <canvas id="c"></canvas>
+  <div id="overlay">
+    <h2 id="overlay-title">HOOPS HEROES</h2>
+    <p id="overlay-sub"></p>
+    <div id="final-score-display"></div>
+    <div id="final-scoreboard">
+      <div class="sb-team" id="sb-p1">
+        <div class="sb-team-name">PLAYER 1</div>
+        <div class="sb-team-label" id="sb-label1">CAROLINA</div>
+        <div class="sb-score" id="sb-score1">00</div>
+        <div class="sb-winner" id="sb-winner1"></div>
+      </div>
+      <div class="sb-divider">:</div>
+      <div class="sb-team" id="sb-p2">
+        <div class="sb-team-name">PLAYER 2</div>
+        <div class="sb-team-label" id="sb-label2">DUKE</div>
+        <div class="sb-score" id="sb-score2">00</div>
+        <div class="sb-winner" id="sb-winner2"></div>
+      </div>
+    </div>
+    <div id="mode-select">
+      <button id="btn-1p" class="mode-btn">1 PLAYER</button>
+      <button id="btn-2p" class="mode-btn">2 PLAYERS</button>
+      <button id="btn-online" class="mode-btn">ONLINE</button>
+    </div>
+
+    <div id="online-lobby" style="display:none; flex-direction:column; align-items:center; gap:14px;">
+      <div style="font-family:var(--ui-font);font-size:13px;letter-spacing:3px;color:rgba(255,255,255,0.5);">ONLINE MULTIPLAYER</div>
+      <button id="btn-create-room" class="mode-btn">CREATE GAME</button>
+      <div style="font-family:var(--ui-font);font-size:13px;letter-spacing:2px;color:rgba(255,255,255,0.4);margin-top:4px;">— OR —</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="join-code-input" type="text" maxlength="5" placeholder="ENTER CODE"
+          style="font-family:var(--ui-font);font-size:20px;letter-spacing:4px;text-transform:uppercase;
+          background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.25);border-radius:8px;
+          color:#fff;padding:10px 14px;width:160px;text-align:center;outline:none;">
+        <button id="btn-join-room" class="mode-btn" style="padding:10px 20px;font-size:16px;">JOIN</button>
+      </div>
+      <div id="lobby-status" style="font-family:var(--ui-font);font-size:14px;letter-spacing:2px;color:var(--neon-yellow);min-height:20px;text-align:center;"></div>
+      <div id="room-code-display" style="display:none;font-family:var(--ui-font);font-size:36px;letter-spacing:8px;color:var(--hoop-orange);text-shadow:0 0 20px rgba(255,107,26,0.5);"></div>
+      <div id="waiting-msg" style="display:none;font-family:var(--ui-font);font-size:13px;letter-spacing:2px;color:rgba(255,255,255,0.5);">WAITING FOR OPPONENT...</div>
+      <button id="btn-back-lobby" style="font-family:var(--ui-font);font-size:13px;letter-spacing:3px;background:transparent;color:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.15);padding:8px 20px;border-radius:6px;cursor:pointer;margin-top:4px;">BACK</button>
+    </div>
+
+    <div id="char-select">
+      <div id="char-select-title">CHOOSE YOUR PLAYER</div>
+      <div id="char-select-panels">
+        <div class="char-panel">
+          <div class="char-panel-label">PLAYER 1</div>
+          <div class="char-team-name" id="char1-team"></div>
+          <div class="char-row">
+            <button class="char-arrow" id="char1-left">◀</button>
+            <canvas class="char-canvas" id="char1-canvas" width="120" height="190"></canvas>
+            <button class="char-arrow" id="char1-right">▶</button>
+          </div>
+        </div>
+        <div class="char-panel">
+          <div class="char-panel-label">PLAYER 2</div>
+          <div class="char-team-name" id="char2-team"></div>
+          <div class="char-row">
+            <button class="char-arrow" id="char2-left">◀</button>
+            <canvas class="char-canvas" id="char2-canvas" width="120" height="190"></canvas>
+            <button class="char-arrow" id="char2-right">▶</button>
+          </div>
+        </div>
+      </div>
+      <button id="char-select-btn">LET'S PLAY</button>
+    </div>
+    <button id="start-btn" style="display:none">PLAY AGAIN</button>
+    <div id="instructions">
+      <kbd>← →</kbd> Move P1 &nbsp;·&nbsp; <kbd>↑</kbd> Jump/Shoot &nbsp;·&nbsp; <kbd>J</kbd> Steal P1<br>
+      Behind arc = 3pts (50%) &nbsp;·&nbsp; Inside = 2pts (75%) &nbsp;·&nbsp; Near hoop = DUNK! 💥<br>
+      <span id="p2-controls-hint" style="display:none"><kbd>A D</kbd> Move P2 &nbsp;·&nbsp; <kbd>W</kbd> Jump/Shoot &nbsp;·&nbsp; <kbd>G</kbd> Steal P2</span>
+    </div>
+  </div>
+  <div id="combo-toast"></div>
+  <div id="zone-indicator"></div>
+  <div id="controls-hint">← → MOVE &nbsp;|&nbsp; SPACE JUMP &amp; SHOOT</div>
+  <div id="pause-menu">
+    <div id="pause-box">
+      <div id="pause-title">PAUSED</div>
+      <button id="pause-continue">CONTINUE</button>
+      <button id="pause-menu-btn">RETURN TO MAIN MENU</button>
+    </div>
+  </div>
+</div>
+
+<div id="touch-controls">
+  <div id="touch-arrows">
+    <button class="touch-btn touch-arrow" id="btn-left">◀</button>
+    <button class="touch-btn touch-action" id="btn-jump">JUMP</button>
+  </div>
+  <div id="touch-actions">
+    <button class="touch-btn touch-arrow" id="btn-right">▶</button>
+    <button class="touch-btn touch-action" id="btn-steal">STEAL</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
+const W = 660;
+const H = 440;
+canvas.width = W;
+canvas.height = H;
+canvas.style.width = W + 'px';
+canvas.style.height = H + 'px';
+
+// ── Constants ─────────────────────────────────────────────────
+const GRAVITY      = 0.40;
+const BALL_R       = 14;
+const PLAYER_SPEED = 4.0;
+const FLOOR_Y      = H * 0.68;
+const PLAYER_Y     = FLOOR_Y + (H - FLOOR_Y) * 0.5;
+const HOOP_W       = 60;
+const RIM_R        = 6;
+const JUMP_VY      = -12.5;
+const THREE_PT_DIST = W * 0.34;
+const DUNK_DIST    = THREE_PT_DIST * 1.6 * 0.8;
+
+// ── Hoop — right side, near far-right of right half ───────────
+// Pole is fixed at W*0.88 in world-space (within right half W..WORLD_W)
+// All hoop geometry derived from pole position so left mirrors exactly
+const R_POLE_CX  = W + W * 1.18;                  // right pole X in world space (near far end of right half)
+const HOOP_X     = R_POLE_CX - (W*0.88 - W*0.62); // hoop left edge (same gap from pole as before)
+const hoopY      = H * 0.46;
+
+const boardX     = HOOP_X + HOOP_W / 2 + 14;
+const BOARD_H    = 56;
+const BOARD_W    = 72;
+
+const THREE_PT_X  = HOOP_X - THREE_PT_DIST;
+const ACTUAL_3PT_X = R_POLE_CX + 14 - (THREE_PT_DIST * 1.6);
+
+// ── Full court (two hoops) ────────────────────────────────────
+const WORLD_W    = W * 2.5;
+
+// Left pole mirrors right pole: same distance from left edge as right pole from right edge
+const L_POLE_CX  = WORLD_W - R_POLE_CX;           // = W - W*0.88 = W*0.12
+const L_HOOP_X   = WORLD_W - HOOP_X - HOOP_W;     // exact mirror of HOOP_X
+const L_boardX   = WORLD_W - boardX - BOARD_W;     // exact mirror of boardX
+const R_POLE_WALL = R_POLE_CX - 12;  // players can't move right past this
+const L_POLE_WALL = L_POLE_CX + 12;  // players can't move left past this
+
+let cameraX = 0;
+
+// ── Player ────────────────────────────────────────────────────
+let player = {
+  x: WORLD_W * 0.5, y: PLAYER_Y,
+  vy: 0, hasJumped: false, canShoot: false,
+  faceDir: 1, dunkAnim: 0,
+  windmill: -1, windmillDone: false,
+  stealAnim: 0,    // 0 = inactive, 1..0 = swipe progress
+  stealPause: 0,   // frames remaining in fail-pause
+};
+
+// ── Ball ─────────────────────────────────────────────────────
+let ball = null;
+
+// ── Player 2 (CPU — Duke player, attacks left basket) ────────
+let player2 = {
+  x: WORLD_W * 0.5 - 60, y: PLAYER_Y,
+  vy: 0, vx: 0,
+  hasJumped: false, canShoot: false,
+  dunkAnim: 0, faceDir: -1,
+  windmill: -1, windmillDone: false,
+  stealAnim: 0, stealPause: 0,
+  stillTimer: 0,  // counts frames player 1 stands still with ball
+  // AI state
+  aiTimer: 0, aiState: 'move', shotType: null
+};
+
+// ── Ball 2 (player 2's ball) ──────────────────────────────────
+
+// ── Input ─────────────────────────────────────────────────────
+const keys = {};
+let spaceDown = false;
+let kDown = false; // player 1 jump key (2-player mode)
+let fDown = false; // player 2 jump key (2-player mode)
+
+// ── State ─────────────────────────────────────────────────────
+let state    = 'idle';
+let twoPlayerMode = false;
+let score    = 0;
+let score2   = 0;  // opponent score
+let onlineConnected = false;
+let onlineRole = null; // 'host' or 'guest'
+let ws = null;
+let isOvertime = false;
+let possession = 1; // 1 = player1 has ball, 2 = player2 has ball
+let waitingHandoff = false; // suppress ball-follow during post-score delay
+let timeLeft = 60;
+let timerInterval = null;
+
+// ── FX ───────────────────────────────────────────────────────
+let particles = [];
+let popups    = [];
+let comboToastTimer = null;
+let netSwish  = 0;
+
+// ──────────────────────────────────────────────────────────────
+//  ZONE HELPERS
+// ──────────────────────────────────────────────────────────────
+function getZone() {
+  const BASELINE_X = HOOP_X + HOOP_W + 27;
+  const THREE_RX = THREE_PT_DIST * 1.6;
+  const hoopDist = Math.abs(player.x - (HOOP_X + HOOP_W/2));
+  if (hoopDist < DUNK_DIST) return 'dunk';
+  if (player.x < BASELINE_X - THREE_RX) {
+    // Behind 3pt arc — check if also behind halfcourt
+    if (player.x < WORLD_W / 2) return 'halfcourt';
+    return 'three';
+  }
+  return 'two';
+}
+
+// ──────────────────────────────────────────────────────────────
+//  BALL
+// ──────────────────────────────────────────────────────────────
+function spawnBall() {
+  return { x: player.x, y: player.y - 52,
+           vx: 0, vy: 0, r: BALL_R,
+           active: false, scored: false, trail: [],
+           isDunk: false, isThree: false,
+           arc: null, physics: false, rebounding: false,
+           isMake: false, _reboundTimer: null };
+}
+function resetBall() {
+  if (ball && ball._reboundTimer) clearTimeout(ball._reboundTimer);
+  ball = spawnBall();
+  player.windmill = -1;
+  player.windmillDone = false;
+  waitingHandoff = false; // always clear handoff on reset
+}
+
+// ──────────────────────────────────────────────────────────────
+//  FX
+// ──────────────────────────────────────────────────────────────
+function emitParticles(x, y, color, count=16) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random()*Math.PI*2, s = 2+Math.random()*5;
+    particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s-2,
+      life: 1, decay: 0.025+Math.random()*0.02, r: 3+Math.random()*4, color });
+  }
+}
+function emitConfetti(x, y) {
+  const cols = ['#f5e642','#ff6b1a','#fff','#44ddff','#ff4488','#88ff44'];
+  for (let i = 0; i < 32; i++) {
+    const a = -Math.PI/2+(Math.random()-0.5)*Math.PI, s = 3+Math.random()*8;
+    particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: 1,
+      decay: 0.012+Math.random()*0.015, r: 4+Math.random()*5,
+      color: cols[Math.floor(Math.random()*cols.length)],
+      spin: (Math.random()-0.5)*0.35, angle: Math.random()*Math.PI*2, rect: Math.random()>0.4 });
+  }
+}
+function addPopup(x, y, text, color='#f5e642') {
+  popups.push({ x, y, text, color, life: 1, vy: -1.4 });
+}
+function showComboToast(text) {
+  const el = document.getElementById('combo-toast');
+  el.textContent = text;
+  el.style.transition = 'none';
+  el.style.opacity = '1';
+  el.style.transform = 'translateX(-50%) scale(1.35)';
+  if (comboToastTimer) clearTimeout(comboToastTimer);
+  comboToastTimer = setTimeout(() => {
+    el.style.transition = 'opacity 0.45s, transform 0.45s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) scale(0.9)';
+  }, 900);
+}
+
+// ──────────────────────────────────────────────────────────────
+//  HUD
+// ──────────────────────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('score-display').textContent  = score;
+  document.getElementById('score2-display').textContent = score2;
+  document.getElementById('timer-display').textContent  = Math.max(0, timeLeft).toFixed(1);
+  const pct = timeLeft / (isOvertime ? 15 : 60);
+  document.getElementById('timer-bar').style.width = (pct*100)+'%';
+  document.getElementById('timer-bar').style.background =
+    timeLeft <= 15 ? '#ff2200' : 'linear-gradient(90deg,#ff4400,#f5e642)';
+
+  const zoneEl = document.getElementById('zone-indicator');
+  if (state === 'playing') {
+    const z = getZone();
+    if (z==='dunk')          zoneEl.innerHTML = '💥 DUNK ZONE';
+    else if (z==='two')      zoneEl.innerHTML = '2PT &nbsp;75%';
+    else if (z==='three')    zoneEl.innerHTML = '3PT &nbsp;50%';
+    else if (z==='halfcourt') zoneEl.innerHTML = '🏀 HALFCOURT 10%';
+  } else {
+    zoneEl.innerHTML = '';
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  PERSPECTIVE HELPERS
+// ──────────────────────────────────────────────────────────────
+// Court is now viewed from the SIDELINE: hoop at bottom-center,
+// court extends straight back (upward toward horizon).
+// Vanishing point is centered horizontally.
+const HORIZON_Y = FLOOR_Y * 0.28;
+const VP_X = W * 0.72; // vanishing point — right side for wood plank perspective
+
+function perspY(worldX, worldZ) {
+  // worldZ: 0 = front (bottom), 1 = back (horizon)
+  return HORIZON_Y + (FLOOR_Y - HORIZON_Y) * (1 - worldZ);
+}
+function perspX(worldX, worldZ) {
+  return worldX + (VP_X - worldX) * worldZ;
+}
+
+// ──────────────────────────────────────────────────────────────
+//  DRAW — 3D COURT + BLEACHERS
+// ──────────────────────────────────────────────────────────────
+function drawCourt() {
+  const ceilG = ctx.createLinearGradient(0, 0, 0, FLOOR_Y);
+  ceilG.addColorStop(0,'#0d0d1a'); ceilG.addColorStop(0.5,'#111122'); ceilG.addColorStop(1,'#1a1a30');
+  ctx.fillStyle = ceilG; ctx.fillRect(0, 0, WORLD_W, FLOOR_Y);
+
+  drawBleachers();
+
+  // Spotlights across full world
+  [W*0.15,W*0.38,W*0.62,W*0.85, W+W*0.15,W+W*0.38,W+W*0.62,W+W*0.85].forEach(lx => {
+    const lg = ctx.createRadialGradient(lx,FLOOR_Y*0.1,2,lx,FLOOR_Y*0.5,180);
+    lg.addColorStop(0,'rgba(255,240,200,0.18)'); lg.addColorStop(0.4,'rgba(255,220,160,0.06)'); lg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=lg; ctx.fillRect(lx-180,0,360,FLOOR_Y);
+    ctx.beginPath(); ctx.arc(lx,6,4,0,Math.PI*2); ctx.fillStyle='#fff5cc'; ctx.fill();
+    ctx.beginPath(); ctx.arc(lx,6,7,0,Math.PI*2); ctx.fillStyle='rgba(255,240,160,0.3)'; ctx.fill();
+  });
+
+
+
+  // Hardwood floor
+  const floorG = ctx.createLinearGradient(0,FLOOR_Y,0,H);
+  floorG.addColorStop(0,'#a85c18'); floorG.addColorStop(0.2,'#c8742a');
+  floorG.addColorStop(0.5,'#e08832'); floorG.addColorStop(0.8,'#d07828'); floorG.addColorStop(1,'#b86220');
+  ctx.fillStyle=floorG; ctx.fillRect(0,FLOOR_Y,WORLD_W,H-FLOOR_Y);
+
+  // Horizontal shading bands
+  for(let d=0;d<10;d++){
+    const t=d/10, y1=FLOOR_Y+(H-FLOOR_Y)*t, y2=FLOOR_Y+(H-FLOOR_Y)*(t+0.1);
+    ctx.fillStyle=d%2===0?'rgba(0,0,0,0.03)':'rgba(255,255,255,0.025)';
+    ctx.fillRect(0,y1,WORLD_W,y2-y1);
+  }
+
+  // Floor shine
+  const shineG=ctx.createLinearGradient(W*0.2,FLOOR_Y,W*0.8,H);
+  shineG.addColorStop(0,'rgba(255,200,100,0)'); shineG.addColorStop(0.5,'rgba(255,200,100,0.07)'); shineG.addColorStop(1,'rgba(255,200,100,0)');
+  ctx.fillStyle=shineG; ctx.fillRect(0,FLOOR_Y,WORLD_W,H-FLOOR_Y);
+
+  // ── COURT LINES ─────────────────────────────────────────────
+  // Coordinate system:
+  //   X = horizontal on screen (left = mid-court, right = baseline)
+  //   Y = depth into court (y=H is near sideline, y=FLOOR_Y is far sideline)
+  //
+  // Baseline: vertical line at right (BASELINE_X), runs full depth
+  // Lane lines: horizontal lines at fixed Y depths, run across court width
+  // 3pt: two vertical corner segments near baseline, connected by arc bulging left
+
+  const POLE_CX    = R_POLE_CX;
+  const BASELINE_X = HOOP_X + HOOP_W + 27;  // just right of hoop, left of pole
+  const LC = 'rgba(255,255,255,0.85)';
+  const LW = 2.2;
+
+  // Y positions for near/far sidelines and court markings
+  const Y_NEAR = H;           // near sideline (bottom of screen)
+  const Y_FAR  = FLOOR_Y;     // far sideline (top of floor = red line)
+  const Y_MID  = (Y_NEAR + Y_FAR) / 2;  // mid-depth
+
+  // Lane: two horizontal lines at fixed depths (Y), spanning from baseline leftward
+  const LANE_W    = W * 0.40 + 46;
+  const LANE_L_X  = POLE_CX - LANE_W;
+  const LANE_NEAR = H - (H - FLOOR_Y) * 0.24;
+  const LANE_FAR  = H - (H - FLOOR_Y) * 0.76;
+  const FT_Y      = H - (H - FLOOR_Y) * 0.50;  // free throw line Y
+
+  // Paint fill
+  ctx.save();
+  ctx.fillStyle = 'rgba(160,70,10,0.28)';
+  ctx.fillRect(LANE_L_X, LANE_FAR, BASELINE_X - LANE_L_X, LANE_NEAR - LANE_FAR);
+  ctx.restore();
+
+  // Lane lines (horizontal — constant Y, run left to baseline)
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(LANE_L_X, LANE_NEAR); ctx.lineTo(BASELINE_X, LANE_NEAR); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(LANE_L_X, LANE_FAR);  ctx.lineTo(BASELINE_X, LANE_FAR);  ctx.stroke();
+
+  // Left lane boundary (vertical, closes the box)
+  ctx.beginPath(); ctx.moveTo(LANE_L_X, LANE_FAR); ctx.lineTo(LANE_L_X, LANE_NEAR); ctx.stroke();
+
+  ctx.restore();
+
+
+  // Baseline (vertical, right side — close to pole base)
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(BASELINE_X, Y_FAR); ctx.lineTo(BASELINE_X, Y_NEAR); ctx.stroke();
+  ctx.restore();
+
+  // 3-point line:
+  //   Corner straights = two short vertical segments near baseline
+  //   (one near the near sideline, one near the far sideline)
+  //   Arc = curves leftward between them, bulging left at mid-depth
+  const THREE_RX = THREE_PT_DIST * 1.6;
+
+  // Corner straights run from near the sidelines to where arc begins
+  const CORNER_NEAR = Y_NEAR - (H - FLOOR_Y) * 0.06;  // just inside near sideline
+  const CORNER_FAR  = Y_FAR  + (H - FLOOR_Y) * 0.06;  // just inside far sideline
+
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(BASELINE_X, Y_NEAR); ctx.lineTo(BASELINE_X, CORNER_NEAR); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(BASELINE_X, Y_FAR);  ctx.lineTo(BASELINE_X, CORNER_FAR);  ctx.stroke();
+  ctx.restore();
+
+  // 3pt arc: true semicircle — parameterize as circle from angle 0 to π
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW; ctx.beginPath();
+  const arcCY   = (CORNER_NEAR + CORNER_FAR) / 2;  // center Y of arc
+  const arcRadY = (CORNER_NEAR - CORNER_FAR) / 2;  // Y radius
+  const steps = 80;
+  for (let i = 0; i <= steps; i++) {
+    const angle = (i / steps) * Math.PI;            // 0 → π
+    const y     = arcCY - arcRadY * Math.cos(angle); // traces from CORNER_NEAR to CORNER_FAR
+    const x     = BASELINE_X - THREE_RX * Math.sin(angle); // bulges left
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke(); ctx.restore();
+
+  // ── LEFT COURT LINES — exact world-space mirror of right ─────
+  // Right baseline is at BASELINE_X (world space, right half)
+  // Left baseline mirrors it: WORLD_W - BASELINE_X
+  const L_BASELINE_X  = WORLD_W - BASELINE_X;
+  // Right lane left edge is LANE_L_X; left mirror is WORLD_W - LANE_L_X - LANE_W
+  const L_LANE_LEFT_X = WORLD_W - LANE_L_X;
+
+  // Paint fill
+  ctx.fillStyle = 'rgba(160,70,10,0.28)';
+  ctx.fillRect(L_BASELINE_X, LANE_FAR, L_LANE_LEFT_X - L_BASELINE_X, LANE_NEAR - LANE_FAR);
+
+  // Lane lines
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(L_BASELINE_X, LANE_NEAR); ctx.lineTo(L_LANE_LEFT_X, LANE_NEAR); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(L_BASELINE_X, LANE_FAR);  ctx.lineTo(L_LANE_LEFT_X, LANE_FAR);  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(L_LANE_LEFT_X, LANE_FAR); ctx.lineTo(L_LANE_LEFT_X, LANE_NEAR); ctx.stroke();
+  ctx.restore();
+
+  // Left baseline
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(L_BASELINE_X, Y_FAR); ctx.lineTo(L_BASELINE_X, Y_NEAR); ctx.stroke();
+  ctx.restore();
+
+  // Left 3pt corners and arc (exact mirror — arc bulges LEFT toward center)
+  const L_CORNER_NEAR = CORNER_NEAR;
+  const L_CORNER_FAR  = CORNER_FAR;
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(L_BASELINE_X, Y_NEAR); ctx.lineTo(L_BASELINE_X, L_CORNER_NEAR); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(L_BASELINE_X, Y_FAR);  ctx.lineTo(L_BASELINE_X, L_CORNER_FAR);  ctx.stroke();
+  ctx.restore();
+
+  // Left 3pt arc — mirror of right: base on left baseline, bulges RIGHT toward center
+  ctx.save(); ctx.strokeStyle = LC; ctx.lineWidth = LW; ctx.beginPath();
+  for (let i = 0; i <= 80; i++) {
+    const angle = (i / 80) * Math.PI;
+    const y = arcCY - arcRadY * Math.cos(angle);
+    const x = L_BASELINE_X + THREE_RX * Math.sin(angle); // bulges RIGHT
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke(); ctx.restore();
+  // Center court line at WORLD_W/2 (true midpoint of the full court)
+  ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = LW;
+  ctx.beginPath(); ctx.moveTo(WORLD_W/2, Y_FAR); ctx.lineTo(WORLD_W/2, Y_NEAR); ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle='#cc1111'; ctx.fillRect(0,FLOOR_Y-6,WORLD_W,6);
+  ctx.fillStyle='rgba(255,80,80,0.3)'; ctx.fillRect(0,FLOOR_Y-6,WORLD_W,2);
+
+  // Arena glow
+  const spotlight=ctx.createRadialGradient(W/2,FLOOR_Y,30,W/2,FLOOR_Y-80,320);
+  spotlight.addColorStop(0,'rgba(255,220,160,0.14)'); spotlight.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=spotlight; ctx.fillRect(0,0,WORLD_W,FLOOR_Y+20);
+}
+
+function drawBleachers() {
+  const rowCount = 7, totalH = FLOOR_Y - 14, rowH = totalH / rowCount;
+
+  for (let half = 0; half < 2; half++) {
+    const startX = half === 0 ? 0 : WORLD_W / 2;
+    const halfW  = WORLD_W / 2;
+
+    for (let r = 0; r < rowCount; r++) {
+      const rowY = 8 + r * rowH;
+      const lt = 22 + r * 2.5, sat = 45 - r * 2;
+      const rowG = ctx.createLinearGradient(0, rowY, 0, rowY + rowH);
+      rowG.addColorStop(0, `hsl(220,${sat}%,${lt+4}%)`);
+      rowG.addColorStop(1, `hsl(220,${sat}%,${lt}%)`);
+      ctx.fillStyle = rowG;
+      ctx.fillRect(startX, rowY, halfW, rowH - 2);
+      ctx.fillStyle = `hsl(220,${sat}%,${lt-6}%)`;
+      ctx.fillRect(startX, rowY + rowH - 3, halfW, 3);
+    }
+  }
+}
+
+
+function drawHoopPole() {
+  const shaftW  = 16;
+  const poleX   = R_POLE_CX - shaftW / 2;
+  const poleTopY = hoopY - 46;
+  const poleBotY = FLOOR_Y + (H - FLOOR_Y) * 0.5;
+
+  // Shaft
+  ctx.save();
+  const shaftG = ctx.createLinearGradient(poleX, 0, poleX + shaftW, 0);
+  shaftG.addColorStop(0,'#444'); shaftG.addColorStop(0.30,'#c0c0c0');
+  shaftG.addColorStop(0.60,'#888'); shaftG.addColorStop(1,'#333');
+  ctx.fillStyle = shaftG;
+  ctx.beginPath(); ctx.roundRect(poleX, poleTopY, shaftW, poleBotY - poleTopY, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(poleX + shaftW*0.3, poleTopY+4); ctx.lineTo(poleX + shaftW*0.3, poleBotY-10); ctx.stroke();
+  ctx.restore();
+
+  // Base
+  const baseW = shaftW + 36, baseH = 14;
+  const baseX = poleX - (baseW - shaftW) / 2, baseY = poleBotY - baseH;
+  ctx.save();
+  const baseG = ctx.createLinearGradient(baseX, 0, baseX + baseW, 0);
+  baseG.addColorStop(0,'#222'); baseG.addColorStop(0.4,'#999'); baseG.addColorStop(1,'#222');
+  ctx.fillStyle = baseG;
+  ctx.beginPath(); ctx.roundRect(baseX, baseY, baseW, baseH, 4); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath(); ctx.roundRect(baseX+3, baseY+2, baseW-6, 4, 2); ctx.fill();
+  ctx.restore();
+
+  // Arm: connects pole center to back-right edge of backboard at board vertical center
+  const armY  = (hoopY - 46) + 56 / 2;  // vertical center of backboard
+  const armX0 = boardX + 72 + 10;       // back-right edge of board (face + DEP)
+  const armX1 = R_POLE_CX;              // pole center
+  ctx.save();
+  const armG = ctx.createLinearGradient(0, armY-5, 0, armY+5);
+  armG.addColorStop(0,'#aaa'); armG.addColorStop(0.5,'#e0e0e0'); armG.addColorStop(1,'#666');
+  ctx.fillStyle = armG;
+  ctx.fillRect(armX0, armY-5, armX1 - armX0, 10);
+  ctx.fillStyle = '#888';
+  ctx.beginPath(); ctx.arc(armX0, armY, 6, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(armX1, armY, 6, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawHoopPoleLeft() {
+  // Mirror of right pole — pole on the LEFT side of left backboard
+  const shaftW   = 16;
+  const poleX    = L_POLE_CX - shaftW / 2;
+  const poleTopY = hoopY - 46;
+  const poleBotY = FLOOR_Y + (H - FLOOR_Y) * 0.5;
+  ctx.save();
+  const shaftG = ctx.createLinearGradient(poleX, 0, poleX + shaftW, 0);
+  shaftG.addColorStop(0,'#444'); shaftG.addColorStop(0.30,'#c0c0c0');
+  shaftG.addColorStop(0.60,'#888'); shaftG.addColorStop(1,'#333');
+  ctx.fillStyle = shaftG;
+  ctx.beginPath(); ctx.roundRect(poleX, poleTopY, shaftW, poleBotY - poleTopY, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(poleX + shaftW*0.3, poleTopY+4); ctx.lineTo(poleX + shaftW*0.3, poleBotY-10); ctx.stroke();
+  ctx.restore();
+  const baseW = shaftW+36, baseH=14, baseX=poleX-(baseW-shaftW)/2, baseY=poleBotY-baseH;
+  ctx.save();
+  const baseG = ctx.createLinearGradient(baseX,0,baseX+baseW,0);
+  baseG.addColorStop(0,'#222'); baseG.addColorStop(0.4,'#999'); baseG.addColorStop(1,'#222');
+  ctx.fillStyle=baseG; ctx.beginPath(); ctx.roundRect(baseX,baseY,baseW,baseH,4); ctx.fill();
+  ctx.restore();
+  // Arm: connects left pole center to back-left edge of left backboard at board vertical center
+  const armY  = (hoopY - 46) + 56 / 2;  // vertical center of backboard
+  const armX0 = L_POLE_CX;              // left pole center
+  const armX1 = L_boardX - 10;          // back-left edge of left board (left face - DEP)
+  ctx.save();
+  const armG = ctx.createLinearGradient(0,armY-5,0,armY+5);
+  armG.addColorStop(0,'#aaa'); armG.addColorStop(0.5,'#e0e0e0'); armG.addColorStop(1,'#666');
+  ctx.fillStyle = armG;
+  ctx.fillRect(armX0, armY-5, armX1 - armX0, 10);
+  ctx.fillStyle='#888';
+  ctx.beginPath(); ctx.arc(armX0,armY,6,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(armX1,armY,6,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+
+function drawBackboard() {
+  // ── Dimensions ────────────────────────────────────────────────
+  const BW   = 72;   // board face width
+  const BH   = 56;   // board face height
+  const DEP  = 10;   // 3-d depth (side thickness)
+  const bx   = boardX;          // left edge of face
+  const by   = hoopY - 46;      // top edge of face
+
+  // ── Right side face (3-D depth panel) ─────────────────────────
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(bx + BW,       by);
+  ctx.lineTo(bx + BW + DEP, by - DEP * 0.5);
+  ctx.lineTo(bx + BW + DEP, by + BH - DEP * 0.5);
+  ctx.lineTo(bx + BW,       by + BH);
+  ctx.closePath();
+  const sideG = ctx.createLinearGradient(bx + BW, 0, bx + BW + DEP, 0);
+  sideG.addColorStop(0, '#888');
+  sideG.addColorStop(1, '#444');
+  ctx.fillStyle = sideG;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.restore();
+
+  // ── Top face ──────────────────────────────────────────────────
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(bx,             by);
+  ctx.lineTo(bx + BW,        by);
+  ctx.lineTo(bx + BW + DEP,  by - DEP * 0.5);
+  ctx.lineTo(bx + DEP,       by - DEP * 0.5);
+  ctx.closePath();
+  const topG = ctx.createLinearGradient(0, by - DEP * 0.5, 0, by);
+  topG.addColorStop(0, '#aaa');
+  topG.addColorStop(1, '#777');
+  ctx.fillStyle = topG;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.restore();
+
+  // ── Front face ────────────────────────────────────────────────
+  ctx.save();
+  // Tempered-glass face: subtle blue-tinted transparent panel
+  const faceG = ctx.createLinearGradient(bx, by, bx + BW, by + BH);
+  faceG.addColorStop(0,   'rgba(210,235,255,0.22)');
+  faceG.addColorStop(0.5, 'rgba(180,220,255,0.10)');
+  faceG.addColorStop(1,   'rgba(160,200,240,0.18)');
+  ctx.fillStyle = faceG;
+  ctx.fillRect(bx, by, BW, BH);
+
+  // Glass edge highlight
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.lineWidth = 2;
+  ctx.strokeRect(bx, by, BW, BH);
+
+  // Inner target box (red square painted on glass)
+  const tbx = bx + BW * 0.2, tby = by + BH * 0.32;
+  const tbw = BW * 0.6,      tbh = BH * 0.40;
+  ctx.strokeStyle = '#e03010'; ctx.lineWidth = 3;
+  ctx.strokeRect(tbx, tby, tbw, tbh);
+
+  // Glare streak across glass
+  ctx.save();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(bx + BW*0.15, by);
+  ctx.lineTo(bx + BW*0.38, by);
+  ctx.lineTo(bx + BW*0.22, by + BH);
+  ctx.lineTo(bx + BW*0.05, by + BH);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  ctx.restore();
+
+}
+
+function drawBackboardLeft() {
+  // Mirror of right backboard — faces RIGHT (depth panel on left side)
+  const BW=72, BH=56, DEP=10;
+  const bx = L_boardX;
+  const by = hoopY - 46;
+  // Left side face
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(bx,           by);
+  ctx.lineTo(bx - DEP,     by - DEP*0.5);
+  ctx.lineTo(bx - DEP,     by + BH - DEP*0.5);
+  ctx.lineTo(bx,           by + BH);
+  ctx.closePath();
+  const sideG = ctx.createLinearGradient(bx-DEP,0,bx,0);
+  sideG.addColorStop(0,'#444'); sideG.addColorStop(1,'#888');
+  ctx.fillStyle=sideG; ctx.fill();
+  ctx.restore();
+  // Top face
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(bx,         by);
+  ctx.lineTo(bx+BW,      by);
+  ctx.lineTo(bx+BW,      by - DEP*0.5);
+  ctx.lineTo(bx-DEP,     by - DEP*0.5);
+  ctx.closePath();
+  const topG=ctx.createLinearGradient(0,by-DEP*0.5,0,by);
+  topG.addColorStop(0,'#aaa'); topG.addColorStop(1,'#777');
+  ctx.fillStyle=topG; ctx.fill();
+  ctx.restore();
+  // Glass face
+  ctx.save();
+  const gfG=ctx.createLinearGradient(bx,by,bx+BW,by+BH);
+  gfG.addColorStop(0,'rgba(200,230,255,0.18)');
+  gfG.addColorStop(1,'rgba(160,200,240,0.08)');
+  ctx.fillStyle=gfG; ctx.fillRect(bx,by,BW,BH);
+  ctx.strokeStyle='rgba(255,255,255,0.65)'; ctx.lineWidth=2; ctx.strokeRect(bx,by,BW,BH);
+  // Target box
+  ctx.strokeStyle='#e03010'; ctx.lineWidth=3;
+  ctx.strokeRect(bx+BW*0.2, by+BH*0.32, BW*0.6, BH*0.40);
+  ctx.restore();
+}
+
+function drawHoop(hx, hy) {
+  // ── 3-D Rim ───────────────────────────────────────────────────
+  // The rim is viewed from a slight angle — left rim is further away (smaller),
+  // right rim is closer. We represent it as a thick ellipse with a top highlight.
+
+  const rimW   = HOOP_W;          // horizontal span
+  const rimRad = 5;               // tube radius
+  const skew   = 7;               // vertical squash to give 3-d tilt
+
+  // Rim shadow cast on floor below
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.beginPath();
+  ctx.ellipse(hx + rimW/2, hy + 38, rimW/2 + 4, 8, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#000'; ctx.fill();
+  ctx.restore();
+
+  // ── Net ───────────────────────────────────────────────────────
+  const netSegs  = 10;
+  const netDepth = 28;
+  const neckW    = rimW * 0.38;
+
+  // netSwish: 1 = full bulge, decays to 0. Spring oscillation via sin.
+  const swingAmp  = netSwish * 12;
+  const neckPull  = netSwish * 8;
+  const wobble    = Math.sin(netSwish * Math.PI * 4) * netSwish * 4;
+
+  // Vertical net strands
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= netSegs; i++) {
+    const t   = i / netSegs;
+    const tx0 = hx + t * rimW;
+    const tx1 = hx + rimW/2 - (neckW + neckPull)/2 + t * (neckW + neckPull);
+    const topY = hy + skew * Math.sin(t * Math.PI) * 0.4;
+    const bowY  = hy + netDepth * 0.5 + swingAmp * Math.sin(t * Math.PI);
+    const endY  = hy + netDepth + swingAmp * 0.8 + wobble;
+    ctx.beginPath();
+    ctx.moveTo(tx0, topY + rimRad);
+    ctx.quadraticCurveTo(tx0 * 0.7 + tx1 * 0.3, bowY, tx1, endY);
+    ctx.stroke();
+  }
+  // Horizontal net rings
+  for (let r = 0; r < 4; r++) {
+    const rt     = (r + 1) / 5;
+    const ringY  = hy + rimRad + (netDepth + swingAmp * rt) * rt + wobble * rt;
+    const spread = rimW/2 * (1 - rt * 0.55) * (1 + netSwish * 0.15 * rt);
+    const cx2    = hx + rimW / 2;
+    ctx.beginPath();
+    ctx.ellipse(cx2, ringY, spread, spread * 0.22, 0, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(255,255,255,${0.45 - r * 0.08})`; ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Rim tube — bottom arc (far side, drawn first/behind) ──────
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,80,20,0.5)'; ctx.shadowBlur = 8;
+
+  // Far (back) half of rim ellipse — drawn behind net
+  ctx.beginPath();
+  ctx.ellipse(hx + rimW/2, hy, rimW/2, skew, 0, Math.PI, 0); // top arc = far side
+  ctx.strokeStyle = '#bb3300'; ctx.lineWidth = rimRad * 1.6; ctx.stroke();
+  ctx.strokeStyle = '#993300'; ctx.lineWidth = rimRad * 0.6; ctx.stroke();
+  ctx.restore();
+
+  // ── Rim tube — front arc (near side, drawn in front) ──────────
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,100,30,0.6)'; ctx.shadowBlur = 10;
+
+  ctx.beginPath();
+  ctx.ellipse(hx + rimW/2, hy, rimW/2, skew, 0, 0, Math.PI); // bottom arc = near side
+  ctx.strokeStyle = '#ff5500'; ctx.lineWidth = rimRad * 2; ctx.stroke();
+
+  // Highlight stripe on near rim
+  ctx.strokeStyle = 'rgba(255,180,80,0.55)'; ctx.lineWidth = rimRad * 0.5;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  // ── Left & right rim end-caps ──────────────────────────────────
+  [[hx, hy - skew * 0.1], [hx + rimW, hy - skew * 0.1]].forEach(([rx, ry]) => {
+    ctx.save();
+    const capG = ctx.createRadialGradient(rx - 1, ry - 1, 1, rx, ry, rimRad + 1);
+    capG.addColorStop(0, '#ff8844');
+    capG.addColorStop(1, '#882200');
+    ctx.beginPath(); ctx.arc(rx, ry, rimRad + 1, 0, Math.PI*2);
+    ctx.fillStyle = capG; ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+//  DRAW — CARTOON PLAYER
+// ──────────────────────────────────────────────────────────────
+function drawPlayer() {
+  const px = player.x, py = player.y;
+  const inAir = player.hasJumped;
+  const canSh = player.canShoot;
+  const dunk  = player.dunkAnim > 0;
+
+  const _c1    = CHARACTERS[selectedChar1];
+  const SKIN      = _c1.skin;
+  const SKIN_LT   = _c1.skinLt;
+  const JERSEY    = _c1.jersey;
+  const JERSEY_B  = _c1.jerseyB;
+  const SHORTS    = _c1.shorts;
+  const SHORTS_D  = _c1.shortsD;
+  const SHOE      = _c1.shoe;
+  const SHOE_TRIM = _c1.shoeTrim;
+
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.scale(player.faceDir, 1);
+
+  // Shadow
+  const ss = inAir ? Math.max(0.25, 1-(PLAYER_Y-py)/140) : 1;
+  ctx.beginPath(); ctx.ellipse(0, 3, 24*ss, 7*ss, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
+
+  // ── LEGS ──────────────────────────────────────────────────────
+  // Left leg
+  ctx.save(); ctx.translate(-7, -26);
+  ctx.rotate(inAir ? -0.38 : 0);
+  // Draw shoe FIRST so calf overlaps it (no gap)
+  ctx.fillStyle = SHOE;
+  ctx.beginPath(); ctx.roundRect(-14, 22, 20, 16, [2,2,6,6]); ctx.fill();
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = SHOE_TRIM;
+  ctx.beginPath(); ctx.roundRect(-14, 35, 20, 3, [0,0,6,6]); ctx.fill();
+  // Shorts
+  ctx.fillStyle = SHORTS;
+  ctx.beginPath(); ctx.roundRect(-5, 0, 11, 16, [4,4,0,0]); ctx.fill();
+  ctx.strokeStyle = SHORTS_D; ctx.lineWidth = 1; ctx.stroke();
+  // Calf (drawn over shoe top to hide seam)
+  ctx.fillStyle = SKIN;
+  ctx.beginPath(); ctx.roundRect(-4, 15, 9, 12, [0,0,2,2]); ctx.fill();
+  ctx.restore();
+
+  // Right leg
+  ctx.save(); ctx.translate(7, -26);
+  ctx.rotate(inAir ? 0.38 : 0);
+  ctx.fillStyle = SHOE;
+  ctx.beginPath(); ctx.roundRect(-6, 22, 20, 16, [2,2,6,6]); ctx.fill();
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = SHOE_TRIM;
+  ctx.beginPath(); ctx.roundRect(-6, 35, 20, 3, [0,0,6,6]); ctx.fill();
+  ctx.fillStyle = SHORTS;
+  ctx.beginPath(); ctx.roundRect(-5, 0, 11, 16, [4,4,0,0]); ctx.fill();
+  ctx.strokeStyle = SHORTS_D; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = SKIN;
+  ctx.beginPath(); ctx.roundRect(-4, 15, 9, 12, [0,0,2,2]); ctx.fill();
+  ctx.restore();
+
+  // ── BODY — white jersey ────────────────────────────────────────
+  ctx.fillStyle = JERSEY;
+  ctx.beginPath(); ctx.roundRect(-17, -56, 34, 30, [10,10,5,5]); ctx.fill();
+  ctx.strokeStyle = JERSEY_B; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = JERSEY_B;
+  ctx.fillRect(-17, -56, 4, 30);
+  ctx.fillRect(13, -56, 4, 30);
+  ctx.fillStyle = JERSEY_B; ctx.font = "bold 15px 'Bebas Neue',cursive"; ctx.textAlign = 'center';
+  ctx.save(); ctx.scale(player.faceDir, 1); ctx.fillText(_c1.num, 0, -34); ctx.restore();
+  ctx.fillStyle = JERSEY_B; ctx.font = "bold 5px 'Bebas Neue',cursive";
+  ctx.save(); ctx.scale(player.faceDir, 1); ctx.fillText(_c1.team, 0, -44); ctx.restore();
+
+  // ── ARMS ──────────────────────────────────────────────────────
+  ctx.fillStyle = SKIN;
+  if (player.stealAnim > 0) {
+    // Swipe arm — extends forward, peaks at mid-animation
+    const swipeProgress = 1 - Math.abs(player.stealAnim - 0.5) * 2; // 0→1→0
+    const swipeAngle = player.faceDir > 0 ? -0.3 - swipeProgress * 1.1 : Math.PI + 0.3 + swipeProgress * 1.1;
+    ctx.save(); ctx.translate(player.faceDir > 0 ? 17 : -17, -48); ctx.rotate(swipeAngle);
+    ctx.beginPath(); ctx.roundRect(0, -5, 28, 10, 5); ctx.fill(); ctx.restore();
+    // Other arm back
+    ctx.save(); ctx.translate(player.faceDir > 0 ? -17 : 17, -46); ctx.rotate(player.faceDir > 0 ? 0.5 : -0.5);
+    ctx.beginPath(); ctx.roundRect(0, -4, 18, 9, 4); ctx.fill(); ctx.restore();
+  } else if (player.windmill >= 0 && !player.windmillDone) {
+    const canvasAngle = Math.PI / 2 + player.windmill;
+    // Left arm — pivot at (-17,-48), extends toward ball at canvasAngle
+    ctx.save();
+    ctx.translate(-17, -48);
+    ctx.rotate(canvasAngle);
+    ctx.beginPath(); ctx.roundRect(0, -5, 30, 10, 5); ctx.fill();
+    ctx.restore();
+    // Right arm stays wide for balance
+    ctx.save(); ctx.translate(17, -46); ctx.rotate(-0.7);
+    ctx.beginPath(); ctx.roundRect(0, -5, 20, 10, 5); ctx.fill(); ctx.restore();
+  } else if (dunk) {
+    ctx.save(); ctx.translate(-17, -50); ctx.rotate(-Math.PI/2 - 0.4);
+    ctx.beginPath(); ctx.roundRect(0, -5, 22, 10, 5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(17, -50); ctx.rotate(-Math.PI/2 + 0.1);
+    ctx.beginPath(); ctx.roundRect(0, -5, 22, 10, 5); ctx.fill(); ctx.restore();
+  } else if (inAir && canSh) {
+    ctx.save(); ctx.translate(17, -48); ctx.rotate(-1.3);
+    ctx.beginPath(); ctx.roundRect(0, -5, 24, 10, 5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(-17, -48); ctx.rotate(0.5);
+    ctx.beginPath(); ctx.roundRect(0, -5, 18, 9, 5); ctx.fill(); ctx.restore();
+  } else if (inAir) {
+    ctx.save(); ctx.translate(-17, -46); ctx.rotate(0.7);
+    ctx.beginPath(); ctx.roundRect(0, -5, 20, 10, 5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(17, -46); ctx.rotate(-0.7);
+    ctx.beginPath(); ctx.roundRect(0, -5, 20, 10, 5); ctx.fill(); ctx.restore();
+  } else {
+    ctx.save(); ctx.translate(-17, -46); ctx.rotate(0.25);
+    ctx.beginPath(); ctx.roundRect(0, -4, 18, 9, 4); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(17, -46); ctx.rotate(-0.25);
+    ctx.beginPath(); ctx.roundRect(0, -4, 18, 9, 4); ctx.fill(); ctx.restore();
+  }
+
+  // ── HAIR — drawn BEFORE head so braids hang behind face
+  if (_c1.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a', HAIR_SHEEN='#4a2a12';
+    const braids=[[-2,-94,-3,-60,2],[3,-94,4,-60,2],[-7,-93,-8,-62,1.8],[7,-93,8,-62,1.8],[-12,-90,-14,-64,1.8],[12,-90,14,-64,1.8],[-16,-87,-22,-66,1.7],[16,-87,22,-66,1.7]];
+    braids.forEach(([rx,ry,ex,ey,w])=>{
+      const g=ctx.createLinearGradient(rx,ry,ex,ey); g.addColorStop(0,HAIR); g.addColorStop(0.5,HAIR_SHEEN); g.addColorStop(1,HAIR_MID);
+      ctx.strokeStyle=g; ctx.lineWidth=w; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(rx,ry); ctx.quadraticCurveTo(rx+(ex-rx)*0.3,ry+(ey-ry)*0.6,ex,ey); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ex,ey,w*0.85,0,Math.PI*2); ctx.fillStyle=HAIR_MID; ctx.fill();
+    });
+  } else if (_c1.hair === 'locs') {
+    // All locs drawn here — before head so they appear behind face
+    const HAIR='#2a1800', HAIR_MID='#1a0e04';
+    // Crown base blobs
+    [[-8,-90,7],[2,-93,7.5],[11,-91,7],[-16,-86,6],[18,-85,6],[-1,-87,6.5]].forEach(([hx,hy,hr])=>{
+      ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.fillStyle=HAIR; ctx.fill();
+    });
+    // Locs: [rootX,rootY, ctrlX,ctrlY, tipX,tipY, width]
+    [
+      // Far left edge — curves sideways-down
+      [-16,-86, -32,-82, -24,-68, 3.0],
+      [-14,-87, -30,-82, -22,-66, 2.8],
+      // Gap filler: transition between edge and left-side
+      [-12,-88, -31,-100, -19,-69, 2.8],
+      // Left side — upward arcs
+      [-10,-90, -30,-118, -16,-70, 2.8],
+      [-8,-91,  -27,-119, -13,-71, 2.8],
+      [-6,-91,  -24,-121, -10,-72, 2.8],
+      [-4,-92,  -20,-122,  -8,-73, 2.8],
+      [-2,-92,  -16,-123,  -5,-74, 2.8],
+      // Center-left
+      [0,-93,   -12,-124,  -3,-74, 2.8],
+      [2,-93,   -8,-125,   -1,-74, 2.8],
+      // Center-right
+      [4,-93,    4,-125,    2,-74, 2.8],
+      [6,-93,    8,-125,    5,-74, 2.8],
+      // Right side — upward arcs
+      [8,-92,   16,-123,   8,-73, 2.8],
+      [10,-90,  24,-121,  14,-70, 2.8],
+      [12,-90,  27,-119,  16,-70, 2.8],
+      [14,-89,  30,-118,  18,-68, 2.8],
+      // Gap filler: transition between right-side and edge
+      [16,-88,  33,-100,  22,-68, 2.8],
+      // Far right edge — curves sideways-down
+      [18,-86,  32,-82,   24,-66, 2.8],
+      [20,-83,  34,-80,   26,-62, 3.0],
+      // Face-framing
+      [-19,-82, -32,-98,  -23,-66, 2.6],
+      [-20,-79, -31,-93,  -23,-63, 2.5],
+      [-21,-76, -30,-88,  -23,-63, 2.4],
+      [19,-82,  32,-98,   23,-66, 2.6],
+      [20,-79,  31,-93,   23,-63, 2.5],
+      [21,-76,  30,-88,   23,-63, 2.4],
+    ].forEach(([x1,y1,cx,cy,x2,y2,w])=>{
+      const g=ctx.createLinearGradient(x1,y1,x2,y2); g.addColorStop(0,HAIR); g.addColorStop(1,HAIR_MID);
+      ctx.strokeStyle=g; ctx.lineWidth=w; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(cx,cy,x2,y2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x2,y2,w*0.6,0,Math.PI*2); ctx.fillStyle=HAIR_MID; ctx.fill();
+    });
+    ctx.lineCap='butt'; ctx.lineWidth=1;
+  }
+
+  // ── HEAD ──────────────────────────────────────────────────────
+  ctx.fillStyle = SKIN;
+  ctx.beginPath(); ctx.roundRect(-6, -62, 12, 10, 3); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -74, 22, 0, Math.PI*2);
+  ctx.fillStyle = SKIN; ctx.fill();
+  ctx.strokeStyle = SKIN_LT; ctx.lineWidth = 2; ctx.stroke();
+
+  // ── HAIR OVER HEAD ────────────────────────────────────────────
+  if (_c1.hair === 'short') {
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle='#2a1000'; ctx.beginPath(); ctx.arc(0,-74,23,aL,aR,false); ctx.arc(0,-74,19,aR,aL,true); ctx.closePath(); ctx.fill();
+  } else if (_c1.hair === 'fade') {
+    ctx.fillStyle='#1a0a02'; ctx.beginPath(); ctx.arc(0,-74,23,Math.PI*1.1,Math.PI*1.9,false); ctx.arc(0,-74,16,Math.PI*1.9,Math.PI*1.1,true); ctx.closePath(); ctx.fill();
+  } else if (_c1.hair === 'coils') {
+    const HAIR='#1a0802', HAIR_D='#0d0401';
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aL,aR,false); ctx.arc(0,-74,17,aR,aL,true); ctx.closePath(); ctx.fill();
+    [[-14,-84,5],[-6,-88,5.5],[3,-90,5.5],[12,-88,5],[18,-83,4.5],[-19,-81,4],[-10,-91,4.5],[1,-94,5],[10,-92,4.5],[17,-87,4]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR;ctx.fill();});
+    [[-14,-84,2.5],[-6,-88,2.5],[3,-90,2.5],[12,-88,2.5],[18,-83,2],[-10,-91,2],[1,-94,2.5],[10,-92,2],[17,-87,2]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR_D;ctx.fill();});
+  } else if (_c1.hair === 'locs') {
+    const HAIR='#2a1800', aRl=Math.atan2(-87-(-74),16), aLl=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aLl,aRl,false); ctx.arc(0,-74,17,aRl,aLl,true); ctx.closePath(); ctx.fill();
+  } else if (_c1.hair === 'afro') {
+    const HAIR='#1a0a02', HAIR_D='#0d0501', HAIR_M='#2e1208';
+    ctx.fillStyle=HAIR;
+    ctx.beginPath(); ctx.ellipse(1,-95,18,14,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-18,-92,8,10,-0.15,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(19,-91,7,9,0.15,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-9,-104,9,7,-0.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9,-104,8,7,0.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(1,-107,7,6,0,0,Math.PI*2); ctx.fill();
+    [[-22,-94,5],[-21,-84,4],[-14,-108,5],[-2,-110,5],[8,-109,5],[20,-100,5],[23,-90,5],[23,-83,4]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR;ctx.fill();});
+    [[-10,-98,2.5,HAIR_D],[0,-100,2.5,HAIR_D],[10,-98,2.5,HAIR_D],[-5,-105,2,HAIR_D],[5,-105,2,HAIR_D],[-15,-93,2,HAIR_M],[15,-93,2,HAIR_M],[0,-94,2,HAIR_M]].forEach(([hx,hy,hr,col])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();});
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.roundRect(-17,-84,34,6,3); ctx.fill();
+  } else if (_c1.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a';
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aL,aR,false); ctx.arc(0,-74,18,aR,aL,true); ctx.closePath(); ctx.fill();
+  } else if (_c1.hair === 'waves') {
+    const HAIR='#0d0501', aRw=Math.atan2(-87-(-74),16), aLw=Math.atan2(-87-(-74),-16);
+    const HAIR_LT='#2e1a0a';
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aLw,aRw,false); ctx.arc(0,-74,17,aRw,aLw,true); ctx.closePath(); ctx.fill();
+    [[-10,-93,5],[-2,-97,5],[7,-95,5],[15,-90,5],[-17,-88,5]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR;ctx.fill();});
+    ctx.strokeStyle=HAIR_LT; ctx.lineWidth=1.5; ctx.lineCap='round';
+    [[-20,-82,-8,-86,4,-82],[-3,-85,8,-89,18,-85],[-16,-87,-5,-91,7,-88],[8,-88,17,-92,22,-88]].forEach(([x1,y1,x2,y2,x3,y3])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(x2,y2,x3,y3);ctx.stroke();});
+  }
+  ctx.lineCap='butt'; ctx.lineWidth=1;
+
+  // ── EYES ──────────────────────────────────────────────────────
+  const browOff = inAir ? -3 : 0;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.ellipse(-8,-76,7,8,-0.1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(8,-76,7,8,0.1,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#5a3010'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(-8,-76,7,8,-0.1,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(8,-76,7,8,0.1,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#1a0800';
+  ctx.beginPath(); ctx.arc(-7,-75,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(9,-75,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-5.5,-77,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(10.5,-77,1.5,0,Math.PI*2); ctx.fill();
+
+  // Eyebrows
+  ctx.strokeStyle = '#2a1000'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-15,-86+browOff); ctx.quadraticCurveTo(-8,-90+browOff,-1,-86+browOff); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(1,-86+browOff); ctx.quadraticCurveTo(8,-90+browOff,15,-86+browOff); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Nose
+  ctx.strokeStyle = SKIN_LT; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(2,-70); ctx.quadraticCurveTo(6,-67,3,-65); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // Mouth
+  ctx.strokeStyle = '#5a3010'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  if (inAir && canSh) {
+    ctx.beginPath(); ctx.moveTo(-7,-64); ctx.lineTo(7,-64); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(-10,-64); ctx.quadraticCurveTo(0,-56,10,-64); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.moveTo(-9,-64); ctx.quadraticCurveTo(0,-58,9,-64); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0,-64); ctx.lineTo(0,-60); ctx.stroke();
+    ctx.strokeStyle = '#5a3010'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-10,-64); ctx.quadraticCurveTo(0,-56,10,-64); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+
+  // ── FRONT BRAIDS — only for braids style ──
+  if (_c1.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a';
+    const frontBraids=[[-19,-84,-26,-68,1.6],[19,-84,26,-68,1.6],[-20,-82,-28,-72,1.5],[20,-82,28,-72,1.5]];
+    frontBraids.forEach(([rx,ry,ex,ey,w])=>{
+      const g=ctx.createLinearGradient(rx,ry,ex,ey); g.addColorStop(0,HAIR); g.addColorStop(0.5,'#4a2a12'); g.addColorStop(1,HAIR_MID);
+      ctx.strokeStyle=g; ctx.lineWidth=w; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(rx,ry); ctx.quadraticCurveTo(rx+(ex-rx)*0.3,ry+(ey-ry)*0.6,ex,ey); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ex,ey,w*0.85,0,Math.PI*2); ctx.fillStyle=HAIR_MID; ctx.fill();
+    });
+  }
+
+  // Goatee for locs character — thin horizontal strip across chin
+  if (_c1.hair === 'locs') {
+    const G='#3d2008';
+    ctx.fillStyle=G;
+    // Mustache above lip
+    ctx.beginPath(); ctx.ellipse(-4,-66.5,4,1.5,0.1,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(4,-66.5,4,1.5,-0.1,0,Math.PI*2); ctx.fill();
+    // Chin strap — horizontal bar across chin
+    ctx.beginPath(); ctx.roundRect(-7,-57,14,3,[2,2,2,2]); ctx.fill();
+  }
+
+  // Glow when ready to shoot
+  if (inAir && canSh) {
+    const glow = ctx.createRadialGradient(0,-60,5,0,-60,55);
+    glow.addColorStop(0,'rgba(74,144,217,0.30)');
+    glow.addColorStop(1,'rgba(74,144,217,0)');
+    ctx.beginPath(); ctx.arc(0,-60,55,0,Math.PI*2);
+    ctx.fillStyle = glow; ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ──────────────────────────────────────────────────────────────
+//  DRAW — PLAYER 2 (Duke — curly hair, white/blue jersey)
+// ──────────────────────────────────────────────────────────────
+function drawPlayer2() {
+  const px = player2.x, py = player2.y;
+  const inAir = player2.hasJumped;
+
+  const _c2    = CHARACTERS[selectedChar2];
+  const SKIN     = _c2.skin;
+  const SKIN_LT  = _c2.skinLt;
+  const JERSEY   = _c2.jersey;
+  const JERSEY_B = _c2.jerseyB;
+  const SHORTS   = _c2.shorts;
+  const SHORTS_D = _c2.shortsD;
+  const SHOE     = _c2.shoe;
+  const SHOE_T   = _c2.shoeTrim;
+
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.scale(player2.faceDir, 1);
+
+  // Shadow
+  const ss = inAir ? Math.max(0.25, 1-(PLAYER_Y-py)/140) : 1;
+  ctx.beginPath(); ctx.ellipse(0, 3, 24*ss, 7*ss, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fill();
+
+  // Legs
+  ctx.save(); ctx.translate(-7, -26); ctx.rotate(inAir ? -0.38 : 0);
+  ctx.fillStyle = SHOE; ctx.beginPath(); ctx.roundRect(-7, 22, 16, 16, [2,2,6,6]); ctx.fill();
+  ctx.strokeStyle='#ccc'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle=SHOE_T; ctx.beginPath(); ctx.roundRect(-7,35,16,3,[0,0,6,6]); ctx.fill();
+  ctx.fillStyle=SHORTS; ctx.beginPath(); ctx.roundRect(-5,0,11,16,[4,4,0,0]); ctx.fill();
+  ctx.strokeStyle=SHORTS_D; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle=SKIN; ctx.beginPath(); ctx.roundRect(-4,15,9,12,[0,0,2,2]); ctx.fill();
+  ctx.restore();
+
+  ctx.save(); ctx.translate(7, -26); ctx.rotate(inAir ? 0.38 : 0);
+  ctx.fillStyle=SHOE; ctx.beginPath(); ctx.roundRect(-6,22,20,16,[2,2,6,6]); ctx.fill();
+  ctx.strokeStyle='#ccc'; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle=SHOE_T; ctx.beginPath(); ctx.roundRect(-6,35,20,3,[0,0,6,6]); ctx.fill();
+  ctx.fillStyle=SHORTS; ctx.beginPath(); ctx.roundRect(-5,0,11,16,[4,4,0,0]); ctx.fill();
+  ctx.strokeStyle=SHORTS_D; ctx.lineWidth=1; ctx.stroke();
+  ctx.fillStyle=SKIN; ctx.beginPath(); ctx.roundRect(-4,15,9,12,[0,0,2,2]); ctx.fill();
+  ctx.restore();
+
+  // Body — white jersey with Duke blue trim
+  ctx.fillStyle=JERSEY; ctx.beginPath(); ctx.roundRect(-17,-56,34,30,[10,10,5,5]); ctx.fill();
+  ctx.strokeStyle=JERSEY_B; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle=JERSEY_B; ctx.fillRect(-17,-56,4,30); ctx.fillRect(13,-56,4,30);
+  ctx.fillStyle=JERSEY_B; ctx.font="bold 15px 'Bebas Neue',cursive"; ctx.textAlign='center';
+  ctx.save(); ctx.scale(player2.faceDir, 1); ctx.fillText(_c2.num, 0, -34); ctx.restore();
+  ctx.save(); ctx.scale(player2.faceDir, 1); ctx.font="bold 5px 'Bebas Neue',cursive"; ctx.fillText(_c2.team, 0, -44); ctx.restore();
+
+  // Arms
+  ctx.fillStyle=SKIN;
+  if (player2.stealAnim > 0) {
+    const swipeProgress = 1 - Math.abs(player2.stealAnim - 0.5) * 2;
+    const swipeAngle = -0.3 - swipeProgress * 1.1; // swipes right (toward player1, in mirrored space)
+    ctx.save(); ctx.translate(17, -48); ctx.rotate(swipeAngle);
+    ctx.beginPath(); ctx.roundRect(0, -5, 28, 10, 5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(-17, -46); ctx.rotate(0.5);
+    ctx.beginPath(); ctx.roundRect(0, -4, 18, 9, 4); ctx.fill(); ctx.restore();
+  } else if (player2.windmill >= 0 && !player2.windmillDone) {
+    // Windmill: LEFT arm in local space (-17) = right/outside arm in world space
+    const canvasAngle = Math.PI / 2 + player2.windmill;
+    ctx.save(); ctx.translate(-17, -48); ctx.rotate(canvasAngle);
+    ctx.beginPath(); ctx.roundRect(0, -5, 30, 10, 5); ctx.fill(); ctx.restore();
+    // Right arm (local +17 = world left/inside) stays wide for balance
+    ctx.save(); ctx.translate(17, -46); ctx.rotate(-0.7);
+    ctx.beginPath(); ctx.roundRect(0, -5, 20, 10, 5); ctx.fill(); ctx.restore();
+  } else if (player2.dunkAnim > 0) {
+    ctx.save(); ctx.translate(17, -50); ctx.rotate(-Math.PI/2 - 0.4);
+    ctx.beginPath(); ctx.roundRect(0,-5,22,10,5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(-17, -50); ctx.rotate(-Math.PI/2 + 0.1);
+    ctx.beginPath(); ctx.roundRect(0,-5,22,10,5); ctx.fill(); ctx.restore();
+  } else if (inAir && player2.canShoot) {
+    ctx.save(); ctx.translate(17,-48); ctx.rotate(-1.3);
+    ctx.beginPath(); ctx.roundRect(0,-5,24,10,5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(-17,-48); ctx.rotate(0.5);
+    ctx.beginPath(); ctx.roundRect(0,-5,18,9,5); ctx.fill(); ctx.restore();
+  } else if (inAir) {
+    ctx.save(); ctx.translate(-17,-46); ctx.rotate(0.7);
+    ctx.beginPath(); ctx.roundRect(0,-5,20,10,5); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(17,-46); ctx.rotate(-0.7);
+    ctx.beginPath(); ctx.roundRect(0,-5,20,10,5); ctx.fill(); ctx.restore();
+  } else {
+    ctx.save(); ctx.translate(-17,-46); ctx.rotate(0.25);
+    ctx.beginPath(); ctx.roundRect(0,-4,18,9,4); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(17,-46); ctx.rotate(-0.25);
+    ctx.beginPath(); ctx.roundRect(0,-4,18,9,4); ctx.fill(); ctx.restore();
+  }
+
+  // Hair style
+  const browOff = inAir ? -3 : 0;
+  if (_c2.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a', HAIR_SHEEN='#4a2a12';
+    [[-2,-94,-3,-60,2],[3,-94,4,-60,2],[-7,-93,-8,-62,1.8],[7,-93,8,-62,1.8],[-12,-90,-14,-64,1.8],[12,-90,14,-64,1.8],[-16,-87,-22,-66,1.7],[16,-87,22,-66,1.7]].forEach(([rx,ry,ex,ey,w])=>{
+      const g=ctx.createLinearGradient(rx,ry,ex,ey); g.addColorStop(0,HAIR); g.addColorStop(0.5,HAIR_SHEEN); g.addColorStop(1,HAIR_MID);
+      ctx.strokeStyle=g; ctx.lineWidth=w; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(rx,ry); ctx.quadraticCurveTo(rx+(ex-rx)*0.3,ry+(ey-ry)*0.6,ex,ey); ctx.stroke();
+      ctx.beginPath(); ctx.arc(ex,ey,w*0.85,0,Math.PI*2); ctx.fillStyle=HAIR_MID; ctx.fill();
+    });
+  } else if (_c2.hair === 'locs') {
+    // All locs drawn here — before head so they appear behind face
+    const HAIR='#2a1800', HAIR_MID='#1a0e04';
+    // Crown base blobs
+    [[-8,-90,7],[2,-93,7.5],[11,-91,7],[-16,-86,6],[18,-85,6],[-1,-87,6.5]].forEach(([hx,hy,hr])=>{
+      ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.fillStyle=HAIR; ctx.fill();
+    });
+    // Locs: [rootX,rootY, ctrlX,ctrlY, tipX,tipY, width]
+    [
+      // Far left edge — curves sideways-down
+      [-16,-86, -32,-82, -24,-68, 3.0],
+      [-14,-87, -30,-82, -22,-66, 2.8],
+      // Gap filler: transition between edge and left-side
+      [-12,-88, -31,-100, -19,-69, 2.8],
+      // Left side — upward arcs
+      [-10,-90, -30,-118, -16,-70, 2.8],
+      [-8,-91,  -27,-119, -13,-71, 2.8],
+      [-6,-91,  -24,-121, -10,-72, 2.8],
+      [-4,-92,  -20,-122,  -8,-73, 2.8],
+      [-2,-92,  -16,-123,  -5,-74, 2.8],
+      // Center-left
+      [0,-93,   -12,-124,  -3,-74, 2.8],
+      [2,-93,   -8,-125,   -1,-74, 2.8],
+      // Center-right
+      [4,-93,    4,-125,    2,-74, 2.8],
+      [6,-93,    8,-125,    5,-74, 2.8],
+      // Right side — upward arcs
+      [8,-92,   16,-123,   8,-73, 2.8],
+      [10,-90,  24,-121,  14,-70, 2.8],
+      [12,-90,  27,-119,  16,-70, 2.8],
+      [14,-89,  30,-118,  18,-68, 2.8],
+      // Gap filler: transition between right-side and edge
+      [16,-88,  33,-100,  22,-68, 2.8],
+      // Far right edge — curves sideways-down
+      [18,-86,  32,-82,   24,-66, 2.8],
+      [20,-83,  34,-80,   26,-62, 3.0],
+      // Face-framing
+      [-19,-82, -32,-98,  -23,-66, 2.6],
+      [-20,-79, -31,-93,  -23,-63, 2.5],
+      [-21,-76, -30,-88,  -23,-63, 2.4],
+      [19,-82,  32,-98,   23,-66, 2.6],
+      [20,-79,  31,-93,   23,-63, 2.5],
+      [21,-76,  30,-88,   23,-63, 2.4],
+    ].forEach(([x1,y1,cx,cy,x2,y2,w])=>{
+      const g=ctx.createLinearGradient(x1,y1,x2,y2); g.addColorStop(0,HAIR); g.addColorStop(1,HAIR_MID);
+      ctx.strokeStyle=g; ctx.lineWidth=w; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo(cx,cy,x2,y2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x2,y2,w*0.6,0,Math.PI*2); ctx.fillStyle=HAIR_MID; ctx.fill();
+    });
+    ctx.lineCap='butt'; ctx.lineWidth=1;
+  } else if (_c2.hair === 'locs') {
+    const HAIR='#2a1800', aRl2=Math.atan2(-87-(-74),16), aLl2=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aLl2,aRl2,false); ctx.arc(0,-74,17,aRl2,aLl2,true); ctx.closePath(); ctx.fill();
+  }
+  // Reset context state after all hair branches
+  ctx.lineCap = 'butt'; ctx.lineWidth = 1;
+
+  // ── HEAD ──────────────────────────────────────────────────────
+  ctx.fillStyle = SKIN;
+  ctx.beginPath(); ctx.roundRect(-6, -62, 12, 10, 3); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, -74, 22, 0, Math.PI*2);
+  ctx.fillStyle = SKIN; ctx.fill();
+  ctx.strokeStyle = SKIN_LT; ctx.lineWidth = 2; ctx.stroke();
+
+  // ── HAIR OVER HEAD ────────────────────────────────────────────
+  if (_c2.hair === 'short') {
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle='#2a1000'; ctx.beginPath(); ctx.arc(0,-74,23,aL,aR,false); ctx.arc(0,-74,19,aR,aL,true); ctx.closePath(); ctx.fill();
+  } else if (_c2.hair === 'fade') {
+    ctx.fillStyle='#1a0a02'; ctx.beginPath(); ctx.arc(0,-74,23,Math.PI*1.1,Math.PI*1.9,false); ctx.arc(0,-74,16,Math.PI*1.9,Math.PI*1.1,true); ctx.closePath(); ctx.fill();
+  } else if (_c2.hair === 'coils') {
+    const HAIR='#1a0802', HAIR_D='#0d0401';
+    const aRc=Math.atan2(-87-(-74),16), aLc=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aLc,aRc,false); ctx.arc(0,-74,17,aRc,aLc,true); ctx.closePath(); ctx.fill();
+    [[-14,-84,5],[-6,-88,5.5],[3,-90,5.5],[12,-88,5],[18,-83,4.5],[-19,-81,4],[-10,-91,4.5],[1,-94,5],[10,-92,4.5],[17,-87,4]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR;ctx.fill();});
+    [[-14,-84,2.5],[-6,-88,2.5],[3,-90,2.5],[12,-88,2.5],[18,-83,2],[-10,-91,2],[1,-94,2.5],[10,-92,2],[17,-87,2]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR_D;ctx.fill();});
+  } else if (_c2.hair === 'afro') {
+    const HAIR='#1a0a02', HAIR_D='#0d0501', HAIR_M='#2e1208';
+    ctx.fillStyle=HAIR;
+    ctx.beginPath(); ctx.ellipse(1,-95,18,14,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-18,-92,8,10,-0.15,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(19,-91,7,9,0.15,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-9,-104,9,7,-0.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9,-104,8,7,0.2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(1,-107,7,6,0,0,Math.PI*2); ctx.fill();
+    [[-22,-94,5],[-21,-84,4],[-14,-108,5],[-2,-110,5],[8,-109,5],[20,-100,5],[23,-90,5],[23,-83,4]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR;ctx.fill();});
+    [[-10,-98,2.5,HAIR_D],[0,-100,2.5,HAIR_D],[10,-98,2.5,HAIR_D],[-5,-105,2,HAIR_D],[5,-105,2,HAIR_D],[-15,-93,2,HAIR_M],[15,-93,2,HAIR_M],[0,-94,2,HAIR_M]].forEach(([hx,hy,hr,col])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();});
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.roundRect(-17,-84,34,6,3); ctx.fill();
+  } else if (_c2.hair === 'waves') {
+    const HAIR='#0d0501', aRw=Math.atan2(-87-(-74),16), aLw=Math.atan2(-87-(-74),-16);
+    const HAIR_LT='#2e1a0a';
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aLw,aRw,false); ctx.arc(0,-74,17,aRw,aLw,true); ctx.closePath(); ctx.fill();
+    [[-10,-93,5],[-2,-97,5],[7,-95,5],[15,-90,5],[-17,-88,5]].forEach(([hx,hy,hr])=>{ctx.beginPath();ctx.arc(hx,hy,hr,0,Math.PI*2);ctx.fillStyle=HAIR;ctx.fill();});
+    ctx.strokeStyle=HAIR_LT; ctx.lineWidth=1.5; ctx.lineCap='round';
+    [[-20,-82,-8,-86,4,-82],[-3,-85,8,-89,18,-85],[-16,-87,-5,-91,7,-88],[8,-88,17,-92,22,-88]].forEach(([x1,y1,x2,y2,x3,y3])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.quadraticCurveTo(x2,y2,x3,y3);ctx.stroke();});
+  } else if (_c2.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a';
+    const aRb=Math.atan2(-87-(-74),16), aLb=Math.atan2(-87-(-74),-16);
+    ctx.fillStyle=HAIR; ctx.beginPath(); ctx.arc(0,-74,23,aLb,aRb,false); ctx.arc(0,-74,18,aRb,aLb,true); ctx.closePath(); ctx.fill();
+  }
+  ctx.lineCap='butt'; ctx.lineWidth=1;
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(-8,-76,7,8,-0.1,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(8,-76,7,8,0.1,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#6a3a10'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(-8,-76,7,8,-0.1,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(8,-76,7,8,0.1,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle='#2a1000';
+  ctx.beginPath(); ctx.arc(-7,-75,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(9,-75,4,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-5.5,-77,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(10.5,-77,1.5,0,Math.PI*2); ctx.fill();
+
+  // Eyebrows
+  ctx.strokeStyle='#2a1000'; ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-15,-86+browOff); ctx.quadraticCurveTo(-8,-90+browOff,-1,-86+browOff); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(1,-86+browOff); ctx.quadraticCurveTo(8,-90+browOff,15,-86+browOff); ctx.stroke();
+  ctx.lineCap='butt';
+
+  // Nose
+  ctx.strokeStyle=SKIN_LT; ctx.lineWidth=2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(2,-70); ctx.quadraticCurveTo(6,-67,3,-65); ctx.stroke();
+  ctx.lineCap='butt';
+
+  // Big smile
+  ctx.strokeStyle='#6a3a10'; ctx.lineWidth=2.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-10,-64); ctx.quadraticCurveTo(0,-56,10,-64); ctx.stroke();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.moveTo(-9,-64); ctx.quadraticCurveTo(0,-58,9,-64); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#6a3a10'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(-10,-64); ctx.quadraticCurveTo(0,-56,10,-64); ctx.stroke();
+  ctx.lineCap='butt';
+
+  // Goatee for locs character — thin horizontal strip across chin
+  if (_c2.hair === 'locs') {
+    const G='#3d2008';
+    ctx.fillStyle=G;
+    // Mustache above lip
+    ctx.beginPath(); ctx.ellipse(-4,-66.5,4,1.5,0.1,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(4,-66.5,4,1.5,-0.1,0,Math.PI*2); ctx.fill();
+    // Chin strap — horizontal bar across chin
+    ctx.beginPath(); ctx.roundRect(-7,-57,14,3,[2,2,2,2]); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// ──────────────────────────────────────────────────────────────
+//  UPDATE — PLAYER 2 HUMAN (2-player mode)
+// ──────────────────────────────────────────────────────────────
+function updatePlayer2Human() {
+  // Steal
+  if (player2.stealAnim > 0) {
+    const zipDir = player.x > player2.x ? 1 : -1;
+    if (player2.stealAnim > 0.5) player2.x += zipDir * PLAYER_SPEED * 3.5;
+    player2.vx = zipDir * PLAYER_SPEED * 3.5;
+    player2.stealAnim -= 0.055;
+    if (player2.stealAnim <= 0.52 && player2.stealAnim > 0.46 && ball && !ball.active && possession === 1) {
+      const dx = Math.abs(player2.x - player.x);
+      if (dx < 64 && Math.random() < 0.5) {
+        possession = 2;
+        ball.active = false; ball.physics = false; ball.rebounding = false;
+        ball.vx = 0; ball.vy = 0;
+        ball.x = player2.x; ball.y = player2.y - 52; ball.trail = [];
+        showComboToast('🤚 STEAL!');
+        emitParticles(player.x, player.y - 52, '#ffdd00', 10);
+        player2.stealAnim = 0; player2.stealPause = 0;
+      }
+    }
+    if (player2.stealAnim <= 0) {
+      player2.stealAnim = 0;
+      if (possession === 1) player2.stealPause = 28;
+    }
+    player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+  } else if (player2.stealPause > 0) {
+    player2.stealPause--;
+    player2.vx = 0;
+  } else {
+    player2.vx = 0;
+    if (keys['KeyA']) { player2.x -= PLAYER_SPEED; player2.vx = -PLAYER_SPEED; player2.faceDir = -1; }
+    if (keys['KeyD']) { player2.x += PLAYER_SPEED; player2.vx =  PLAYER_SPEED; player2.faceDir =  1; }
+    player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+  }
+
+  // Gravity
+  if (player2.hasJumped) {
+    player2.vy += GRAVITY;
+    player2.y  += player2.vy;
+    if (player2.y >= PLAYER_Y) {
+      player2.y = PLAYER_Y; player2.vy = 0;
+      player2.hasJumped = false; player2.canShoot = false;
+      player2.shotType = null;
+      player2.windmill = -1; player2.windmillDone = false;
+    }
+    // No auto-fire — shot triggered by second F press in keydown handler
+  }
+
+  if (player2.dunkAnim > 0) player2.dunkAnim = Math.max(0, player2.dunkAnim - 0.035);
+
+  // Windmill
+  if (player2.windmill >= 0 && !player2.windmillDone) {
+    if (player2.vx >= 0) { // cancel windmill if not moving toward left hoop (mirror of player 1's vx <= 0)
+      player2.windmill = -1; player2.windmillDone = false;
+      player2.dunkAnim = 0; ball.isDunk = false;
+      player2.canShoot = true;
+      doShot2();
+    } else {
+      player2.windmill += 0.18;
+      const armLen = 32;
+      const pivotX = player2.x + 17;
+      const pivotY = player2.y - 48;
+      const rimX = L_HOOP_X + HOOP_W / 2;
+      const targetCanvasAngle = Math.atan2(hoopY - pivotY, rimX - pivotX);
+      let releaseW = targetCanvasAngle - Math.PI / 2;
+      if (releaseW < Math.PI) releaseW += Math.PI * 2;
+      if (player2.windmill >= releaseW) {
+        player2.windmill = releaseW; player2.windmillDone = true;
+        const releaseAngle = Math.PI / 2 + player2.windmill;
+        const sx = pivotX - Math.cos(releaseAngle) * armLen;
+        const sy = pivotY + Math.sin(releaseAngle) * armLen;
+        if (ball && !ball.active) {
+          ball.x = sx; ball.y = sy; ball.isMake = true;
+          ball.isDunk = true; ball.isThree = false;
+          launchArc(sx, sy, rimX, hoopY, sy - 5, true, true);
+          ball.arc.steps = 35;
+        }
+      } else {
+        const canvasAngle = Math.PI / 2 + player2.windmill;
+        if (ball && !ball.active) {
+          // Player 2 is mirrored (scale -1,1), arm extends leftward in world space
+          ball.x = pivotX - Math.cos(canvasAngle) * armLen;
+          ball.y = pivotY + Math.sin(canvasAngle) * armLen;
+        }
+      }
+    }
+  }
+
+  player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+  if (player2.vx > 0) player2.faceDir = 1;
+  else if (player2.vx < 0) player2.faceDir = -1;
+
+  if (possession === 2 && !waitingHandoff && ball && !ball.active && !ball.rebounding && player2.windmill < 0) {
+    ball.x = player2.x; ball.y = player2.y - 52;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  UPDATE — PLAYER 2 AI (attacks left basket)
+// ──────────────────────────────────────────────────────────────
+
+function updatePlayer2() {
+  if (onlineConnected && onlineRole === 'guest') return; // guest renders only
+  if (state !== 'playing') return;
+  if (twoPlayerMode) { updatePlayer2Human(); return; }
+  const hoopCX   = L_HOOP_X + HOOP_W / 2;
+  const THREE_RX = THREE_PT_DIST * 1.6;
+  player2.aiTimer--;
+
+  if (!player2.hasJumped) {
+    if (possession === 2) {
+      // Pick a shot type if we don't have one yet
+      if (!player2.shotType) {
+        const lateGameDown = timeLeft <= 10 && score2 < score - 1;
+        if (lateGameDown) {
+          player2.shotType = 'three';
+        } else {
+          const r = Math.random();
+          if (r < 0.40)      player2.shotType = 'three';
+          else if (r < 0.75) player2.shotType = 'dunk';
+          else               player2.shotType = 'two';
+        }
+      }
+
+      // Determine target X based on shot type
+      let targetX;
+      if (player2.shotType === 'three') {
+        // Position just outside 3pt line to the right of the left hoop
+        targetX = hoopCX + THREE_RX + 20;
+      } else if (player2.shotType === 'dunk') {
+        // Get close to the hoop
+        targetX = hoopCX + 20;
+      } else {
+        // Mid-range
+        targetX = hoopCX + THREE_RX * 0.55;
+      }
+
+      const diff = player2.x - targetX;
+      if (Math.abs(diff) > 2) {
+        player2.vx = diff > 0 ? -PLAYER_SPEED : PLAYER_SPEED;
+        player2.x += player2.vx;
+      } else {
+        player2.vx = 0;
+        // At position — jump immediately (no timer delay)
+        if (ball && !ball.active) {
+          player2.vy = JUMP_VY;
+          player2.hasJumped = true;
+          player2.canShoot = true;
+          player2.faceDir = -1; // face left hoop
+          player2.aiTimer = 40 + Math.floor(Math.random() * 40);
+        }
+      }
+      // Chase rebound on offense too (after a miss or settled on floor)
+      if (ball && ball.active && (ball.physics || ball.rebounding) && !ball.scored) {
+        const diff2 = player2.x - ball.x;
+        if (Math.abs(diff2) > PLAYER_SPEED) {
+          player2.vx = diff2 > 0 ? -PLAYER_SPEED : PLAYER_SPEED;
+          player2.x += player2.vx;
+        } else {
+          player2.x = ball.x;
+          player2.vx = 0;
+        }
+      }
+    } else {
+      // ── STEAL ANIMATION ────────────────────────────────────────
+      if (player2.stealAnim > 0) {
+        const zipDir = player.x > player2.x ? 1 : -1;
+        if (player2.stealAnim > 0.5) player2.x += zipDir * PLAYER_SPEED * 3.5;
+        player2.vx = zipDir * PLAYER_SPEED * 3.5;
+        player2.stealAnim -= 0.055;
+
+        // Contact window
+        if (player2.stealAnim <= 0.52 && player2.stealAnim > 0.46 && ball && !ball.active && possession === 1) {
+          const dx = Math.abs(player2.x - player.x);
+          if (dx < 64 && Math.random() < 0.5) {
+            possession = 2;
+            ball.active = false; ball.physics = false; ball.rebounding = false;
+            ball.vx = 0; ball.vy = 0;
+            ball.x = player2.x; ball.y = player2.y - 52;
+            ball.trail = [];
+            showComboToast('🤚 STEAL!');
+            emitParticles(player.x, player.y - 52, '#ffdd00', 10);
+            player2.stealAnim = 0; player2.stealPause = 0;
+          }
+        }
+        if (player2.stealAnim <= 0) {
+          player2.stealAnim = 0;
+          if (possession === 1) player2.stealPause = 28;
+        }
+        player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+        // skip rest of defensive block during steal
+      } else if (player2.stealPause > 0) {
+        player2.stealPause--;
+        player2.vx = 0;
+      } else {
+      // Track how long player 1 has been standing still with the ball
+      const player1Still = possession === 1 && ball && !ball.active
+          && Math.abs(player.vx) < 0.1 && !player.hasJumped;
+      if (player1Still) player2.stillTimer++;
+      else player2.stillTimer = 0;
+
+      // Positioning: creep directly toward player 1 if they've been still long enough, else normal defense
+      const distToPlayer = Math.abs(player2.x - player.x);
+      if (player2.stillTimer > 90) {
+        // Close in directly on player 1
+        const closeDir = player.x > player2.x ? 1 : -1;
+        const closeSpeed = PLAYER_SPEED * 1.8;
+        if (distToPlayer > closeSpeed) {
+          player2.x += closeDir * closeSpeed;
+          player2.vx = closeDir * closeSpeed;
+        } else {
+          player2.x = player.x;
+          player2.vx = 0;
+        }
+      } else {
+        // Normal defensive position — between player and hoop
+        const defX = player.x + (HOOP_X + HOOP_W/2 - player.x) * 0.45;
+        const defSpeed = PLAYER_SPEED * 2.2;
+        const diff = player2.x - defX;
+        if (Math.abs(diff) > defSpeed) {
+          player2.vx = diff > 0 ? -defSpeed : defSpeed;
+          player2.x += player2.vx;
+        } else {
+          player2.x = defX;
+          player2.vx = 0;
+        }
+      }
+
+      // Steal attempt — only when close
+      const stealChance = distToPlayer < 50 ? 0.025 : distToPlayer < 80 ? 0.012 : 0;
+      if (stealChance > 0 && !player2.hasJumped && !player.hasJumped && ball && !ball.active
+          && possession === 1 && Math.random() < stealChance) {
+        player2.stealAnim = 1.0;
+      }
+      // Force steal after standing still too long and close enough
+      if (player2.stillTimer > 150 && !player2.hasJumped && !player.hasJumped
+          && distToPlayer < 80 && player2.stealAnim === 0) {
+        player2.stealAnim = 1.0;
+        player2.stillTimer = 0;
+      }
+      // Jump to block a shot — randomised reaction time, locked when shot starts
+      if (ball && ball.active && !ball.physics && ball.arc && ball.arc.t < 0.8) {
+        if (ball.aiReactThreshold === undefined) {
+          ball.aiReactThreshold = Math.random() < 0.7 ? 0.25 : 0.10;
+        }
+        const distToBall = Math.abs(player2.x - ball.x);
+        if (ball.arc.t > ball.aiReactThreshold && distToBall < 160 && !player2.hasJumped) {
+          player2.vy = JUMP_VY;
+          player2.hasJumped = true;
+          player2.canShoot = false;
+        }
+      }
+      // Jump to contest a dunk — player 1 windmill in progress
+      if (!player2.hasJumped && player.windmill >= 0 && !player.windmillDone) {
+        const distToHoop = Math.abs(player2.x - (HOOP_X + HOOP_W / 2));
+        if (distToHoop < 120) {
+          player2.vy = JUMP_VY;
+          player2.hasJumped = true;
+          player2.canShoot = false;
+        }
+      }
+      // Chase rebound aggressively (including settled ball)
+      if (ball && ball.active && (ball.physics || ball.rebounding) && !ball.scored) {
+        const reboundSpeed = PLAYER_SPEED * 2.2;
+        const diff2 = player2.x - ball.x;
+        if (Math.abs(diff2) > reboundSpeed) {
+          player2.vx = diff2 > 0 ? -reboundSpeed : reboundSpeed;
+          player2.x += player2.vx;
+        } else {
+          player2.x = ball.x;
+          player2.vx = 0;
+        }
+      }
+      } // end normal defense else
+    }
+  }
+
+  // Chase loose ball regardless of possession — if ball is active/settled and nobody holds it
+  if (!twoPlayerMode && ball && ball.active && ball.rebounding && !ball.scored && !waitingHandoff
+      && !player2.hasJumped && player2.stealAnim === 0 && player2.stealPause === 0) {
+    const looseDiff = player2.x - ball.x;
+    const looseSpeed = PLAYER_SPEED * 1.5;
+    if (Math.abs(looseDiff) > looseSpeed) {
+      player2.vx = looseDiff > 0 ? -looseSpeed : looseSpeed;
+      player2.x += player2.vx;
+    } else {
+      player2.x = ball.x;
+      player2.vx = 0;
+    }
+  }
+
+  // Gravity
+  if (player2.hasJumped) {
+    player2.vy += GRAVITY;
+    player2.y  += player2.vy;
+    if (player2.y >= PLAYER_Y) {
+      player2.y = PLAYER_Y; player2.vy = 0;
+      player2.hasJumped = false; player2.canShoot = false;
+      player2.shotType = null;
+      player2.windmill = -1; player2.windmillDone = false;
+    }
+    // Shoot at peak of jump
+    if (player2.canShoot && player2.vy >= -1 && possession === 2 && ball && !ball.active) {
+      doShot2();
+    }
+  }
+
+  if (player2.dunkAnim > 0) player2.dunkAnim = Math.max(0, player2.dunkAnim - 0.035);
+
+  // Windmill animation — player2 faces left, outside arm (pivot at +17) swings toward left hoop
+  if (player2.windmill >= 0 && !player2.windmillDone) {
+    // Cancel if facing wrong direction
+    if (player2.faceDir > 0) {
+      player2.windmill = -1; player2.windmillDone = false;
+      player2.dunkAnim = 0; ball.isDunk = false;
+      player2.canShoot = true;
+      doShot2();
+    } else {
+    player2.windmill += 0.18;
+    const armLen = 32;
+    // player2 is drawn with scale(-1,1), so in local space right arm pivot is at (+17,-48)
+    // but in world space it's mirrored: pivot is at (player2.x - 17, player2.y - 48)
+    const pivotX = player2.x + 17;
+    const pivotY = player2.y - 48;
+    const rimX = L_HOOP_X + HOOP_W / 2;
+
+    const targetCanvasAngle = Math.atan2(hoopY - pivotY, rimX - pivotX);
+    let releaseW = targetCanvasAngle - Math.PI / 2;
+    if (releaseW < Math.PI) releaseW += Math.PI * 2;
+
+    if (player2.windmill >= releaseW) {
+      player2.windmill = releaseW;
+      player2.windmillDone = true;
+      const releaseAngle = Math.PI / 2 + player2.windmill;
+      const sx = pivotX - Math.cos(releaseAngle) * armLen;
+      const sy = pivotY + Math.sin(releaseAngle) * armLen;
+      if (ball && !ball.active) {
+        ball.x = sx; ball.y = sy;
+        ball.isMake = true;
+        ball.isDunk = true; ball.isThree = false;
+        launchArc(sx, sy, rimX, hoopY, sy - 5, true, true);
+        ball.arc.steps = 35;
+      }
+    } else {
+      // Ball follows hand during windmill
+      const canvasAngle = Math.PI / 2 + player2.windmill;
+      if (ball && !ball.active) {
+        ball.x = pivotX - Math.cos(canvasAngle) * armLen;
+        ball.y = pivotY + Math.sin(canvasAngle) * armLen;
+      }
+    }
+    } // end moving-toward-hoop else
+  }
+
+  player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+
+  // Update facing direction from movement
+  if (player2.vx > 0) player2.faceDir = 1;
+  else if (player2.vx < 0) player2.faceDir = -1;
+
+  // When player2 has possession, ball follows them (not during windmill)
+  if (possession === 2 && !waitingHandoff && ball && !ball.active && !ball.rebounding
+      && player2.windmill < 0) {
+    ball.x = player2.x;
+    ball.y = player2.y - 52;
+  }
+}
+
+function doShot2() {
+  if (!ball || ball.active || possession !== 2) return;
+  player2.canShoot = false;
+  player2.faceDir = -1; // face left hoop when shooting
+
+  const shotType = player2.shotType || 'two';
+
+  if (shotType === 'dunk') {
+    ball.isDunk = true; ball.isThree = false;
+    player2.windmill = 0;
+    player2.windmillDone = false;
+    player2.dunkAnim = 1;
+    return;
+  }
+
+  const sx = ball.x, sy = ball.y;
+  const tx = L_HOOP_X + HOOP_W / 2;
+  const ty = hoopY;
+
+  // Accuracy varies by shot type — check for halfcourt regardless of shotType
+  const isHalfcourt2 = player2.x > WORLD_W / 2; // player 2 shoots at left hoop, so halfcourt = right of center
+  const prob = isHalfcourt2 ? 0.10 : shotType === 'three' ? 0.40 : 0.65;
+  const made = Math.random() < prob;
+
+  ball.isMake = made;
+  ball.isDunk  = false;
+  ball.isThree = isHalfcourt2 || (shotType === 'three');
+
+  const x1 = made ? tx : L_HOOP_X + HOOP_W;
+  const y1 = made ? ty : hoopY - RIM_R;
+  const midY = (sy + y1) / 2;
+  const peakCY = Math.max(BALL_R + 10, midY - Math.abs(tx - sx) * 0.55 - 80);
+  const cx = (sx + x1) / 2;
+
+  ball.arc = {
+    x0: sx, y0: sy,
+    x1, y1,
+    cx, cy: peakCY, t: 0, steps: 55
+  };
+  ball.physics = false;
+  ball.vx = 0; ball.vy = 0;
+  ball.active = true;
+  ball.scored = false;
+}
+function drawBall(b) {
+  if (!b) return;
+  const x = b.x, y = b.y, r = b.r;
+
+  // Trail
+  for (let i = 0; i < b.trail.length; i++) {
+    const alpha = (i / b.trail.length) * 0.20;
+    const tr = r * (i / b.trail.length) * 0.55;
+    ctx.beginPath(); ctx.arc(b.trail[i].x, b.trail[i].y, tr, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(220,90,10,${alpha})`; ctx.fill();
+  }
+
+  // Drop shadow
+  ctx.beginPath(); ctx.ellipse(x, y + r + 2, r * 0.85, r * 0.25, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ctx.fill();
+
+  // Base sphere — bright uniform orange, light top-center
+  const g = ctx.createRadialGradient(x - r*0.15, y - r*0.2, r*0.1, x, y, r*1.05);
+  g.addColorStop(0,   '#ff8c3a');
+  g.addColorStop(0.5, '#e85c10');
+  g.addColorStop(1,   '#c04000');
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = g; ctx.fill();
+
+  // Panel highlights — subtle lighter facets
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.clip();
+  ctx.beginPath();
+  ctx.moveTo(x - r*0.7, y - r*0.8);
+  ctx.bezierCurveTo(x - r*0.1, y - r*0.5, x + r*0.3, y - r*0.1, x - r*0.1, y + r*0.2);
+  ctx.bezierCurveTo(x - r*0.5, y + r*0.0, x - r*0.9, y - r*0.3, x - r*0.7, y - r*0.8);
+  ctx.fillStyle = 'rgba(255,160,60,0.28)'; ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + r*0.1, y + r*0.1);
+  ctx.bezierCurveTo(x + r*0.6, y + r*0.1, x + r*0.8, y + r*0.5, x + r*0.3, y + r*0.85);
+  ctx.bezierCurveTo(x - r*0.1, y + r*0.85, x - r*0.2, y + r*0.4, x + r*0.1, y + r*0.1);
+  ctx.fillStyle = 'rgba(255,140,40,0.20)'; ctx.fill();
+  ctx.restore();
+
+  // Seams — clipped to ball
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.clip();
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth   = r * 0.11;
+  ctx.lineCap     = 'round';
+
+  // Vertical seam — curves slightly to the right
+  ctx.beginPath();
+  ctx.moveTo(x, y - r);
+  ctx.bezierCurveTo(x + r*0.3, y - r*0.3, x + r*0.3, y + r*0.3, x, y + r);
+  ctx.stroke();
+
+  // Middle horizontal seam — curves slightly down then back up
+  ctx.beginPath();
+  ctx.moveTo(x - r, y);
+  ctx.bezierCurveTo(x - r*0.3, y + r*0.3, x + r*0.3, y + r*0.3, x + r, y);
+  ctx.stroke();
+
+  // Upper seam — starts top-left, curves down to vertical line, then curves back up to right edge
+  ctx.beginPath();
+  ctx.moveTo(x - r, y - r*0.68);
+  ctx.bezierCurveTo(x - r*0.1, y - r*0.43, x + r*0.25, y - r*0.33, x + r*0.32, y - r*0.33);
+  ctx.bezierCurveTo(x + r*0.45, y - r*0.33, x + r*0.75, y - r*0.60, x + r, y - r*0.50);
+  ctx.stroke();
+
+  // Lower seam — starts bottom-left, curves up to vertical line, then curves back down to right edge
+  ctx.beginPath();
+  ctx.moveTo(x - r, y + r*0.85);
+  ctx.bezierCurveTo(x - r*0.2, y + r*0.55, x + r*0.1, y + r*0.45, x + r*0.15, y + r*0.50);
+  ctx.bezierCurveTo(x + r*0.2, y + r*0.56, x + r*0.6, y + r*0.88, x + r, y + r*0.75);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Glossy highlight
+  const hi = ctx.createRadialGradient(x - r*0.28, y - r*0.32, 0, x - r*0.28, y - r*0.32, r*0.5);
+  hi.addColorStop(0,   'rgba(255,255,255,0.45)');
+  hi.addColorStop(0.5, 'rgba(255,255,255,0.10)');
+  hi.addColorStop(1,   'rgba(255,255,255,0)');
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = hi; ctx.fill();
+}
+
+// ──────────────────────────────────────────────────────────────
+//  PHYSICS / COLLISION
+// ──────────────────────────────────────────────────────────────
+
+// Switch ball from Bezier arc to live physics
+function switchToPhysics(vx, vy) {
+  ball.arc = null;
+  ball.vx  = vx;
+  ball.vy  = vy;
+  ball.physics = true;
+}
+
+function checkBlock(b) {
+  if (!b || !b.active || b.scored) return;
+
+  // For dunk blocks — check while ball is still in arc (windmill phase), not physics
+  if (b.isDunk && !b.physics) {
+    const defenders = [];
+    if (possession === 1) defenders.push({ p: player2, side: 2 });
+    if (possession === 2) defenders.push({ p: player,  side: 1 });
+    for (const { p } of defenders) {
+      if (!p.hasJumped) continue;
+      const handX = p.x;
+      const handY = p.y - 80;
+      const dx = Math.abs(b.x - handX);
+      const dy = Math.abs(b.y - handY);
+      if (dx < 40 && dy < 40) {
+        if (Math.random() > 0.25) return; // 25% chance to block a dunk
+        const vx = (Math.random() - 0.5) * 6;
+        const vy = -(3 + Math.random() * 3);
+        switchToPhysics(vx, vy);
+        b.isMake = false; b.isDunk = false;
+        b.rebounding = true;
+        emitParticles(b.x, b.y, '#ffffff', 10);
+        addPopup(b.x, b.y - 20, 'BLOCKED!', '#ffffff');
+        return;
+      }
+    }
+    return;
+  }
+
+  // Regular shot blocks — only before apex
+  if (!b.arc || b.arc.t > 0.5) return;
+  if (b.physics) return;
+
+  const defenders = [];
+  if (possession === 2) defenders.push({ p: player,  side: 1 });
+  if (possession === 1) defenders.push({ p: player2, side: 2 });
+
+  for (const { p } of defenders) {
+    if (!p.hasJumped) continue;
+    const handX = p.x;
+    const handY = p.y - 80;
+    const dx = Math.abs(b.x - handX);
+    const dy = Math.abs(b.y - handY);
+    if (dx < 28 && dy < 28) {
+      const vx = (Math.random() - 0.5) * 6;
+      const vy = -(3 + Math.random() * 3);
+      switchToPhysics(vx, vy);
+      b.isMake = false;
+      b.rebounding = true;
+      emitParticles(b.x, b.y, '#ffffff', 8);
+      addPopup(b.x, b.y - 20, 'BLOCKED!', '#ffffff');
+      return;
+    }
+  }
+}
+
+function checkScore(b) {
+  if (b.scored) return;
+
+  // Physics-mode score: ball passing downward through hoop opening
+  if (b.physics && !b.isDunk) {
+    const hoops = [{ hx: HOOP_X, hy: hoopY }, { hx: L_HOOP_X, hy: hoopY }];
+    for (const { hx, hy } of hoops) {
+      const inW = b.x > hx + RIM_R - 2 && b.x < hx + HOOP_W - RIM_R + 2;
+      // Detect crossing: ball was above rim last frame, at or below this frame
+      const crossed = (b.prevY !== undefined ? b.prevY < hy + 4 : true) && b.y >= hy - 2;
+      const pass = b.y >= hy - 2 && b.y < hy + b.r + 16;
+      if (inW && (pass || crossed) && b.vy >= 0) {
+        b.scored = true;
+        netSwish = 1.0;
+        const scoredOnLeft = (hx === L_HOOP_X);
+        if (scoredOnLeft) {
+          const pts = b.isThree ? 3 : 2;
+          score2 += pts;
+          updateHUD();
+          addPopup(b.x, b.y - 22, b.isThree ? '+3!' : '+2', b.isThree ? '#f5e642' : '#4a90d9');
+          waitingHandoff = true;
+          setTimeout(() => {
+            possession = 1; waitingHandoff = false;
+            player2.x = WORLD_W / 2; player2.y = PLAYER_Y;
+            player2.hasJumped = false; player2.canShoot = false;
+            player2.aiTimer = 0; player2.shotType = null;
+            player.x = L_HOOP_X + HOOP_W/2; player.y = PLAYER_Y;
+            player.vy = 0; player.hasJumped = false; player.canShoot = false;
+            resetBall(); ball.x = player.x; ball.y = player.y - 52;
+          }, 1200);
+        } else {
+          const pts = b.isThree ? 3 : 2;
+          score += pts;
+          updateHUD();
+          emitConfetti(b.x, b.y);
+          addPopup(b.x, b.y - 22, b.isThree ? '+3!' : '+2', b.isThree ? '#f5e642' : '#fff');
+          waitingHandoff = true;
+          setTimeout(() => {
+            possession = 2; waitingHandoff = false;
+            player.x = WORLD_W / 2; player.y = PLAYER_Y;
+            player.vy = 0; player.hasJumped = false; player.canShoot = false;
+            player2.x = HOOP_X + HOOP_W/2; player2.y = PLAYER_Y;
+            player2.hasJumped = false; player2.canShoot = false;
+            player2.aiTimer = 0; player2.shotType = null;
+            resetBall(); ball.x = player2.x; ball.y = player2.y - 52;
+          }, 1200);
+        }
+        return;
+      }
+    }
+  }
+
+  if (b.physics) return;
+  if (!b.isMake) return;
+
+  // Dunk: score as soon as ball reaches rim level — switch to physics immediately so it drops through cleanly
+  if (b.isDunk && b.y >= hoopY - b.r) {
+    b.scored = true;
+    b.arc = null;
+    switchToPhysics(0.3, 3.5);
+    const pts = 2;
+    emitConfetti(b.x, b.y);
+    emitParticles(b.x, b.y, '#f5e642', 12);
+    waitingHandoff = true;
+
+    const dunkOnLeft = b.x < WORLD_W / 2; // player 2 dunks on left hoop
+    if (dunkOnLeft) {
+      // Player 2 scored
+      score2 += pts;
+      updateHUD();
+      addPopup(b.x, b.y - 22, 'DUNK! +' + pts, '#4a90d9');
+      showComboToast('💥 SLAM DUNK! +' + pts);
+      setTimeout(() => {
+        possession = 1; waitingHandoff = false;
+        player2.x = WORLD_W / 2; player2.y = PLAYER_Y;
+        player2.vy = 0; player2.hasJumped = false; player2.canShoot = false;
+        player2.aiTimer = 0; player2.shotType = null;
+        player2.windmill = -1; player2.windmillDone = false;
+        player.x = L_HOOP_X + HOOP_W / 2; player.y = PLAYER_Y;
+        player.vy = 0; player.hasJumped = false; player.canShoot = false;
+        resetBall();
+        ball.x = player.x; ball.y = player.y - 52;
+      }, 1200);
+    } else {
+      // Player 1 scored
+      score += pts;
+      updateHUD();
+      addPopup(b.x, b.y - 22, 'DUNK! +' + pts, '#ff6600');
+      showComboToast('💥 SLAM DUNK! +' + pts);
+      setTimeout(() => {
+        possession = 2; waitingHandoff = false;
+        player.x = WORLD_W / 2; player.y = PLAYER_Y;
+        player.vy = 0; player.hasJumped = false; player.canShoot = false;
+        player2.x = HOOP_X + HOOP_W / 2; player2.y = PLAYER_Y;
+        player2.hasJumped = false; player2.canShoot = false;
+        player2.aiTimer = 0; player2.shotType = null;
+        resetBall();
+        ball.x = player2.x; ball.y = player2.y - 52;
+      }, 1200);
+    }
+    return;
+  }
+
+  // Check both hoops
+  const hoops = [
+    { hx: HOOP_X, hy: hoopY },
+    { hx: L_HOOP_X, hy: hoopY }
+  ];
+  const hoop = hoops.find(h => Math.abs(b.x - (h.hx + HOOP_W/2)) < HOOP_W);
+  if (!hoop) return;
+  const { hx, hy } = hoop;
+  const inW = b.x > hx + RIM_R + 2 && b.x < hx + HOOP_W - RIM_R - 2;
+  const pass = Math.abs(b.y - hy) < b.r + 6;
+  const down = b.arc && b.arc.t > 0.5;
+  if (inW && pass && down) {
+    b.scored = true;
+    const t  = b.arc.t, mt = 1 - t;
+    const bvx = 2*(t*b.arc.x1 + mt*b.arc.cx - t*b.arc.cx - mt*b.arc.x0) * (1/b.arc.steps);
+    const bvy = 2*(t*b.arc.y1 + mt*b.arc.cy - t*b.arc.cy - mt*b.arc.y0) * (1/b.arc.steps) + 1.5;
+    switchToPhysics(bvx * 0.3, Math.abs(bvy) * 0.8 + 1);
+    netSwish = 1.0;
+
+    const scoredOnLeft = (hx === L_HOOP_X);  // player2 scores on left hoop
+    if (scoredOnLeft) {
+      // Player 2 scored
+      const pts = b.isThree ? 3 : 2;
+      score2 += pts;
+      updateHUD();
+      addPopup(b.x, b.y - 22, b.isThree ? '+3!' : '+2', b.isThree ? '#f5e642' : '#4a90d9');
+      waitingHandoff = true;
+      setTimeout(() => {
+        possession = 1; waitingHandoff = false;
+        player2.x = WORLD_W / 2; player2.y = PLAYER_Y;
+        player2.hasJumped = false; player2.canShoot = false;
+        player2.aiTimer = 0; player2.shotType = null;
+        player.x = L_HOOP_X + HOOP_W/2;
+        player.y = PLAYER_Y;
+        player.vy = 0; player.hasJumped = false; player.canShoot = false;
+        resetBall();
+        ball.x = player.x; ball.y = player.y - 52;
+      }, 1200);
+    } else {
+      // Player 1 scored on right hoop
+      let pts = b.isThree ? 3 : 2;
+      score += pts;
+      updateHUD();
+      emitConfetti(b.x, b.y);
+      emitParticles(b.x, b.y, '#f5e642', 12);
+      addPopup(b.x, b.y - 22, b.isThree ? '+3!' : '+2', b.isThree ? '#f5e642' : '#fff');
+      waitingHandoff = true;
+      setTimeout(() => {
+        possession = 2; waitingHandoff = false;
+        player.x = WORLD_W / 2; player.y = PLAYER_Y;
+        player.vy = 0; player.hasJumped = false; player.canShoot = false;
+        player2.x = HOOP_X + HOOP_W/2;
+        player2.y = PLAYER_Y;
+        player2.hasJumped = false; player2.canShoot = false;
+        player2.aiTimer = 0; player2.shotType = null;
+        resetBall();
+        ball.x = player2.x; ball.y = player2.y - 52;
+      }, 1200);
+    }
+  }
+}
+
+// Block the ball from passing through the hoop opening on a miss
+function checkHoopBlocker(b) {
+  if (b.scored || b.isMake || b.physics || b.isDunk) return;
+  [{hx:HOOP_X,hy:hoopY},{hx:L_HOOP_X,hy:hoopY}].forEach(({hx,hy}) => {
+    const inW = b.x > hx + RIM_R && b.x < hx + HOOP_W - RIM_R;
+    if (inW && b.y + b.r > hy - 4 && b.y - b.r < hy + 4) {
+      const distToLeft  = Math.abs(b.x - hx);
+      const distToRight = Math.abs(b.x - (hx + HOOP_W));
+      const nearRimX = distToLeft < distToRight ? hx : hx + HOOP_W;
+      const a = b.arc, t = a.t, mt = 1 - t;
+      const vx = (2*mt*(a.cx - a.x0) + 2*t*(a.x1 - a.cx)) / a.steps;
+      const vy = (2*mt*(a.cy - a.y0) + 2*t*(a.y1 - a.cy)) / a.steps;
+      switchToPhysics(vx, vy);
+      b.x = nearRimX + (b.x < nearRimX ? -(b.r + RIM_R + 1) : (b.r + RIM_R + 1));
+      b.vy = Math.abs(b.vy) * 0.5;
+      emitParticles(b.x, b.y, '#ff6b1a', 5);
+    }
+  });
+}
+
+function checkRimCollision(b) {
+  if (!b.physics && b.isDunk) return;
+  const allRims = [
+    {x: HOOP_X,            y: hoopY},
+    {x: HOOP_X + HOOP_W,   y: hoopY},
+    {x: L_HOOP_X,          y: hoopY},
+    {x: L_HOOP_X + HOOP_W, y: hoopY},
+  ];
+  allRims.forEach(rim => {
+    const dx = b.x - rim.x, dy = b.y - rim.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < b.r + RIM_R) {
+      if (!b.physics) {
+        // Derive velocity from Bezier tangent (units: pixels per frame)
+        const a = b.arc, t = a.t, mt = 1 - t;
+        const vx = (2*mt*(a.cx - a.x0) + 2*t*(a.x1 - a.cx)) / a.steps;
+        const vy = (2*mt*(a.cy - a.y0) + 2*t*(a.y1 - a.cy)) / a.steps;
+        switchToPhysics(vx, vy);
+      }
+      // Bounce off rim with damping
+      const nx = dx/dist, ny = dy/dist;
+      const dot = b.vx*nx + b.vy*ny;
+      b.vx = (b.vx - 2*dot*nx) * 0.50;
+      b.vy = (b.vy - 2*dot*ny) * 0.50;
+      b.x  = rim.x + nx * (b.r + RIM_R + 1);
+      b.y  = rim.y + ny * (b.r + RIM_R + 1);
+      emitParticles(b.x, b.y, '#ff6b1a', 6);
+    }
+  });
+}
+
+function checkBackboard(b) {
+  const bdy = hoopY - 46;
+  if (b.x + b.r > boardX && b.x - b.r < boardX + BOARD_W &&
+      b.y > bdy && b.y < bdy + BOARD_H) {
+    if (!b.physics) {
+      const a = b.arc, t = a.t, mt = 1 - t;
+      const vx = (2*mt*(a.cx - a.x0) + 2*t*(a.x1 - a.cx)) / a.steps;
+      const vy = (2*mt*(a.cy - a.y0) + 2*t*(a.y1 - a.cy)) / a.steps;
+      switchToPhysics(vx, vy);
+    }
+    b.vx = -Math.abs(b.vx) * 0.55;
+    b.x  = boardX - b.r - 1;
+    emitParticles(b.x, b.y, '#aaddff', 4);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  SHOOT
+// ──────────────────────────────────────────────────────────────
+function launchArc(startX, startY, endX, endY, peakY, noClamp=false, immediate=false) {
+  const clampedPeak = noClamp ? peakY : Math.max(BALL_R + 10, peakY);
+  const cx = (startX + endX) / 2;
+  const cy = clampedPeak;
+  ball.arc     = { x0: startX, y0: startY, x1: endX, y1: endY, cx, cy, t: 0, steps: 55 };
+  ball.physics = false;
+  ball.vx = 0; ball.vy = 0;
+  ball.active  = true;
+  ball.scored  = false;
+  if (immediate) {
+    // Advance one step immediately so ball starts moving this frame, no pause
+    const a = ball.arc;
+    a.t += 1 / a.steps;
+    const t = a.t, mt = 1 - t;
+    ball.x = mt*mt*a.x0 + 2*mt*t*a.cx + t*t*a.x1;
+    ball.y = mt*mt*a.y0 + 2*mt*t*a.cy + t*t*a.y1;
+  }
+}
+
+function doJumpShot() {
+  if (!ball || ball.active) return;
+  player.canShoot = false;
+  player.faceDir = 1; // face right hoop when shooting
+
+  const zone = getZone();
+  const sx = ball.x, sy = ball.y;
+
+  // Always shoot at the right hoop
+  const targetHoopX = HOOP_X;
+
+  const isThree = (player.takeoffZone === 'three');
+  const isHalfcourt = (player.takeoffZone === 'halfcourt');
+  const prob = isHalfcourt ? 0.10 : isThree ? 0.50 : 0.75;
+  const made = Math.random() < prob;
+
+  ball.isThree = isThree || isHalfcourt; ball.isDunk = false;
+
+  const tx = targetHoopX + HOOP_W/2;
+  const ty = hoopY;
+
+  const midY        = (sy + ty) / 2;
+  const desiredPeak = midY - Math.abs(tx - sx) * 0.55 - 80;
+
+  if (made) {
+    ball.isMake = true;
+    launchArc(sx, sy, tx, ty, desiredPeak);
+  } else {
+    ball.isMake = false;
+    const frontRimX = targetHoopX;
+    const frontRimY = hoopY - RIM_R;
+    ball.missTarget = { x: frontRimX, y: frontRimY };
+    launchArc(sx, sy, frontRimX, frontRimY, desiredPeak);
+    addPopup(sx, sy - 35, 'MISS!', 'rgba(255,90,90,0.95)');
+    if (isHalfcourt) addPopup(sx, sy - 55, 'HALFCOURT! 10%', 'rgba(255,180,50,0.9)');
+    else if (isThree) addPopup(sx, sy - 55, '50/50...', 'rgba(100,180,255,0.8)');
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  UPDATE
+// ──────────────────────────────────────────────────────────────
+function updatePlayer() {
+  if (state !== 'playing') return;
+
+  // ── STEAL ANIMATION ──────────────────────────────────────────
+  if (player.stealAnim > 0) {
+    // Zip forward toward player2 during first half of anim
+    const zipDir = player2.x > player.x ? 1 : -1;
+    if (player.stealAnim > 0.5) player.x += zipDir * PLAYER_SPEED * 3.5;
+    player.vx = zipDir * PLAYER_SPEED * 3.5;
+    player.faceDir = zipDir;
+    player.stealAnim -= 0.055;
+
+    // Check steal contact at peak swipe (around anim=0.5)
+    if (player.stealAnim <= 0.52 && player.stealAnim > 0.46 && ball && !ball.active && possession === 2) {
+      const STEAL_REACH = 48;
+      const dx = Math.abs(player.x - player2.x);
+      if (dx < STEAL_REACH && Math.random() < 0.5) {
+        // Steal! ball goes directly to player 1
+        possession = 1;
+        ball.active = false;
+        ball.physics = false;
+        ball.rebounding = false;
+        ball.vx = 0; ball.vy = 0;
+        ball.x = player.x; ball.y = player.y - 52;
+        ball.trail = [];
+        showComboToast('🤚 STEAL!');
+        emitParticles(player2.x, player2.y - 52, '#ffdd00', 10);
+        player.stealAnim = 0;
+        player.stealPause = 0;
+      }
+    }
+
+    if (player.stealAnim <= 0) {
+      player.stealAnim = 0;
+      if (possession === 2) player.stealPause = 28; // failed — pause ~0.5 sec
+    }
+    player.x = Math.max(16, Math.min(R_POLE_WALL, player.x));
+    // Gravity still applies during steal
+    if (player.hasJumped) {
+      player.vy += GRAVITY; player.y += player.vy;
+      if (player.y >= PLAYER_Y) { player.y = PLAYER_Y; player.vy = 0; player.hasJumped = false; player.canShoot = false; }
+    }
+    return;
+  }
+
+  // ── STEAL PAUSE (failed steal recovery) ──────────────────────
+  if (player.stealPause > 0) {
+    player.stealPause--;
+    player.vx = 0;
+    if (player.hasJumped) {
+      player.vy += GRAVITY; player.y += player.vy;
+      if (player.y >= PLAYER_Y) { player.y = PLAYER_Y; player.vy = 0; player.hasJumped = false; }
+    }
+    return;
+  }
+
+  player.vx = 0;
+  if (keys['ArrowLeft'])  { player.x -= PLAYER_SPEED; player.vx = -PLAYER_SPEED; player.faceDir = -1; }
+  if (keys['ArrowRight']) { player.x += PLAYER_SPEED; player.vx =  PLAYER_SPEED; player.faceDir =  1; }
+  if (!twoPlayerMode) {
+    if (keys['KeyA']) { player.x -= PLAYER_SPEED; player.vx = -PLAYER_SPEED; player.faceDir = -1; }
+    if (keys['KeyD']) { player.x += PLAYER_SPEED; player.vx =  PLAYER_SPEED; player.faceDir =  1; }
+  }
+  player.x = Math.max(16, Math.min(R_POLE_WALL, player.x));
+
+  // Player gravity
+  if (player.hasJumped) {
+    player.vy += GRAVITY;
+    player.y  += player.vy;
+    if (player.y >= PLAYER_Y) {
+      player.y = PLAYER_Y; player.vy = 0;
+      player.hasJumped = false; player.canShoot = false;
+    }
+  }
+
+  if (player.dunkAnim > 0) player.dunkAnim = Math.max(0, player.dunkAnim - 0.035);
+
+  // Windmill animation — advance arm rotation, launch dunk arc when complete
+  if (player.windmill >= 0 && !player.windmillDone) {
+    // Cancel windmill if player stops moving forward — do a jump shot instead
+    if (player.vx <= 0) {
+      player.windmill = -1;
+      player.windmillDone = false;
+      player.dunkAnim = 0;
+      ball.isDunk = false;
+      player.canShoot = true;
+      // Immediately shoot as a jump shot
+      doJumpShot();
+    } else {
+      player.windmill += 0.18;
+      const armLen = 32;
+      const pivotX = player.x - 17;
+      const pivotY = player.y - 48;
+      const rimX = HOOP_X + HOOP_W / 2;
+
+      const targetCanvasAngle = Math.atan2(hoopY - pivotY, rimX - pivotX);
+      let releaseW = targetCanvasAngle - Math.PI / 2;
+      if (releaseW < Math.PI) releaseW += Math.PI * 2;
+
+      if (player.windmill >= releaseW) {
+        player.windmill = releaseW;
+        player.windmillDone = true;
+        const releaseAngle = Math.PI / 2 + player.windmill;
+        const sx = pivotX + Math.cos(releaseAngle) * armLen;
+        const sy = pivotY + Math.sin(releaseAngle) * armLen;
+        if (ball && !ball.active) {
+          ball.x = sx; ball.y = sy;
+          ball.isMake = true;
+          launchArc(sx, sy, rimX, hoopY, sy - 5, true, true);
+          ball.arc.steps = 35;
+        }
+      } else {
+        // Still rotating — keep ball glued to hand
+        const canvasAngle = Math.PI / 2 + player.windmill;
+        if (ball && !ball.active) {
+          ball.x = pivotX + Math.cos(canvasAngle) * armLen;
+          ball.y = pivotY + Math.sin(canvasAngle) * armLen;
+        }
+      }
+    }
+  }
+
+  // Rebound catch: either player can grab the ball in physics mode or when settled
+  const ballLoose = ball && ball.active && (ball.physics || ball.rebounding) && !ball.scored && !waitingHandoff;
+  if (ballLoose) {
+    // Check player 1
+    const dx1 = Math.abs(ball.x - player.x);
+    const dy1 = Math.abs(ball.y - (player.y - 52));
+    if (dx1 < 36 && dy1 < 50) {
+      if (ball._reboundTimer) clearTimeout(ball._reboundTimer);
+      ball.active = false; ball.rebounding = false; ball.physics = false;
+      ball.x = player.x; ball.y = player.y - 52; ball.trail = [];
+      possession = 1;
+    }
+    // Check player 2
+    const dx2 = Math.abs(ball.x - player2.x);
+    const dy2 = Math.abs(ball.y - (player2.y - 52));
+    if (dx2 < 36 && dy2 < 50) {
+      if (ball._reboundTimer) clearTimeout(ball._reboundTimer);
+      ball.active = false; ball.rebounding = false; ball.physics = false;
+      ball.x = player2.x; ball.y = player2.y - 52; ball.trail = [];
+      possession = 2;
+    }
+  } else if (possession === 1 && !waitingHandoff && ball && !ball.active && !ball.rebounding && player.windmill < 0) {
+    ball.x = player.x;
+    ball.y = player.y - 52;
+  }
+
+    // Smooth camera: follow ball during active jump shot, otherwise follow player
+  const shotInFlight = ball && ball.active && !ball.isDunk;
+  const followX = shotInFlight ? ball.x
+    : (possession === 2 && !waitingHandoff) ? player2.x : player.x;
+  const targetCam = followX - W / 2;
+  const clampedCam = Math.max(0, Math.min(WORLD_W - W, targetCam));
+  cameraX += (clampedCam - cameraX) * 0.12;
+
+  updateHUD();
+}
+
+function updateBall() {
+  if (!ball || !ball.active) return;
+
+  // Watchdog: if ball has been active for too long without resolving, force reset
+  ball._activeFrames = (ball._activeFrames || 0) + 1;
+  if (ball._activeFrames > 600) { // ~10 seconds at 60fps
+    resetBall();
+    return;
+  }
+
+  ball.trail.push({x: ball.x, y: ball.y});
+  if (ball.trail.length > 16) ball.trail.shift();
+
+  if (!ball.physics) {
+    // ── BEZIER ARC MODE ────────────────────────────────────────
+    const a = ball.arc;
+    if (!a) { resetBall(); return; }
+    a.t += 1 / a.steps;
+    if (a.t > 1) a.t = 1;
+    const t = a.t, mt = 1 - t;
+    ball.x = mt*mt*a.x0 + 2*mt*t*a.cx + t*t*a.x1;
+    ball.y = mt*mt*a.y0 + 2*mt*t*a.cy + t*t*a.y1;
+
+    checkScore(ball);
+    checkBlock(ball);
+    if (ball.isMake) {
+      checkRimCollision(ball);
+    } else {
+      checkHoopBlocker(ball);
+    }
+    checkBackboard(ball);
+
+    // Arc complete
+    if (!ball.physics && a.t >= 1) {
+      if (!ball.scored) {
+        updateHUD();
+        if (!ball.isMake) {
+          const bounceSpeed = 2.5 + Math.random() * 1.5;
+          // Bounce away from the hoop (toward player)
+          const bounceDir = player.x < ball.x ? -1 : 1;
+          switchToPhysics(bounceDir * bounceSpeed, -(2.5 + Math.random() * 1.5));
+          ball.rebounding = true;
+        } else {
+          switchToPhysics((Math.random() - 0.5) * 1.5, 1);
+          ball.rebounding = true;
+        }
+      }
+    }
+  } else {
+    // ── PHYSICS MODE ───────────────────────────────────────────
+    ball.prevY = ball.y;
+    ball.vy += GRAVITY;
+    ball.x  += ball.vx;
+    ball.y  += ball.vy;
+
+    // Top clamp
+    if (ball.y < BALL_R) { ball.y = BALL_R; ball.vy = Math.abs(ball.vy) * 0.4; }
+
+    checkScore(ball);
+    checkRimCollision(ball);
+    checkBackboard(ball);
+
+    // Floor bounce — damps to a stop (rebound)
+    if (ball.y >= PLAYER_Y - BALL_R) {
+      ball.y  = PLAYER_Y - BALL_R;
+      ball.vy = -ball.vy * 0.45;
+      ball.vx =  ball.vx * 0.78;
+      if (Math.abs(ball.vy) < 0.8) {
+        ball.vy = 0; ball.vx = 0;
+        ball.rebounding = true;
+      }
+    }
+
+    // Ball off sides — give up
+    if (ball.x < -60 || ball.x > WORLD_W + 60) {
+      if (!ball.scored) { updateHUD(); }
+      resetBall();
+    }
+
+    // Ball scored and through net + past hoop = reset (only when not mid-handoff)
+    if (ball.scored && ball.y > hoopY + 40 && !waitingHandoff) {
+      resetBall();
+    }
+  }
+}
+
+
+function updateParticles() {
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.life-=p.decay; if(p.spin)p.angle+=p.spin; });
+  if (netSwish > 0) netSwish = Math.max(0, netSwish - 0.025);
+}
+
+function updatePopups() {
+  popups = popups.filter(p => p.life > 0);
+  popups.forEach(p => { p.y+=p.vy; p.life-=0.018; });
+}
+
+// ──────────────────────────────────────────────────────────────
+//  INPUT
+// ──────────────────────────────────────────────────────────────
+function doPlayer1Jump() {
+  if (state !== 'playing' && state !== 'jumpball') return;
+  if (!player.hasJumped) {
+    player.vy = JUMP_VY;
+    player.hasJumped = true;
+    player.canShoot = (possession === 1);
+    player.takeoffZone = getZone();
+    player.takeoffX = player.x;
+    if (possession === 1) player.faceDir = 1;
+  } else if (player.hasJumped && player.canShoot && ball && !ball.active) {
+    const takeoffDist = Math.abs(player.takeoffX - (HOOP_X + HOOP_W/2));
+    const inDunkRange = takeoffDist < DUNK_DIST;
+    if (inDunkRange && player.vx > 0 && player.vy <= 0) {
+      ball.isDunk = true; ball.isThree = false;
+      player.windmill = 0; player.windmillDone = false;
+      player.dunkAnim = 1; player.canShoot = false;
+    } else {
+      doJumpShot();
+    }
+  }
+}
+
+window.addEventListener('keydown', e => {
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
+  keys[e.code] = true;
+
+  // Pause / unpause
+  if (e.code === 'KeyR' && (state === 'playing' || state === 'paused')) {
+    togglePause();
+    return;
+  }
+
+  if (state === 'paused') return;
+
+  if (state === 'jumpball') {
+    if ((e.code === 'Space' || e.code === 'ArrowUp') && !player.hasJumped) {
+      player.vy = JUMP_VY; player.hasJumped = true;
+    }
+    if (twoPlayerMode && e.code === 'KeyW' && !player2.hasJumped) {
+      player2.vy = JUMP_VY; player2.hasJumped = true;
+    }
+    return;
+  }
+
+  if (state !== 'playing') return;
+
+  // ── PLAYER 1 STEAL — J ──────────────────────────────────────
+  if (e.code === 'KeyJ' && !player.hasJumped
+      && player.stealAnim === 0 && player.stealPause === 0 && possession === 2
+      && !player2.hasJumped) {
+    const dist = Math.abs(player.x - player2.x);
+    if (dist < 80) {
+      player.stealAnim = 1.0;
+    } else {
+      // Too far — burst of speed toward opponent
+      const dir = player2.x > player.x ? 1 : -1;
+      player.x += dir * PLAYER_SPEED * 5;
+      player.vx = dir * PLAYER_SPEED * 5;
+      player.faceDir = dir;
+      player.x = Math.max(16, Math.min(R_POLE_WALL, player.x));
+    }
+  }
+
+  // ── PLAYER 1 JUMP/SHOOT — K (2-player mode) or SPACE (both modes) ──
+
+  if (e.code === 'ArrowUp' && !kDown) {
+    kDown = true;
+    doPlayer1Jump();
+  }
+
+  if (e.code === 'Space' && !spaceDown) {
+    spaceDown = true;
+    doPlayer1Jump();
+  }
+
+  // ── PLAYER 2 HUMAN CONTROLS (2-player mode) ─────────────────
+  if (twoPlayerMode) {
+    // G = steal
+    if (e.code === 'KeyG' && !player2.hasJumped
+        && player2.stealAnim === 0 && player2.stealPause === 0 && possession === 1
+        && !player.hasJumped) {
+      const dist2 = Math.abs(player2.x - player.x);
+      if (dist2 < 80) {
+        player2.stealAnim = 1.0;
+      } else {
+        // Too far — burst toward opponent
+        const dir2 = player.x > player2.x ? 1 : -1;
+        player2.x += dir2 * PLAYER_SPEED * 5;
+        player2.vx = dir2 * PLAYER_SPEED * 5;
+        player2.faceDir = dir2;
+        player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+      }
+    }
+    // W = jump / shoot / dunk (mirrors player 1's Space/ArrowUp)
+    if (e.code === 'KeyW' && !fDown) {
+      fDown = true;
+      if (!player2.hasJumped) {
+        // First press — just jump, record takeoff zone and position
+        player2.vy = JUMP_VY;
+        player2.hasJumped = true;
+        player2.canShoot = (possession === 2);
+        player2.takeoffX = player2.x;
+        const p2HoopCX = L_HOOP_X + HOOP_W / 2;
+        const p2Baseline = L_HOOP_X - 27;
+        const p2ThreeRX = THREE_PT_DIST * 1.6;
+        player2.takeoffZone = player2.x > WORLD_W / 2 ? 'halfcourt'
+          : player2.x > p2Baseline + p2ThreeRX ? 'three'
+          : Math.abs(player2.x - p2HoopCX) < DUNK_DIST ? 'dunk' : 'two';
+      } else if (player2.hasJumped && player2.canShoot && ball && !ball.active) {
+        // Second press — dunk only if takeoff was within dunk range
+        const takeoffDist = Math.abs(player2.takeoffX - (L_HOOP_X + HOOP_W/2));
+        const inDunkRange = takeoffDist < DUNK_DIST;
+        if (inDunkRange && player2.vx < 0 && player2.vy <= 0) {
+          ball.isDunk = true; ball.isThree = false;
+          player2.windmill = 0; player2.windmillDone = false;
+          player2.dunkAnim = 1; player2.canShoot = false;
+        } else {
+          doShot2();
+        }
+      }
+    }
+  }
+});
+window.addEventListener('keyup', e => {
+  keys[e.code] = false;
+  if (e.code === 'Space') spaceDown = false;
+  if (e.code === 'ArrowUp') kDown = false;
+  if (e.code === 'KeyW') fDown = false;
+});
+
+// ──────────────────────────────────────────────────────────────
+//  PARTICLES + POPUPS DRAW
+// ──────────────────────────────────────────────────────────────
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save(); ctx.globalAlpha = p.life;
+    if (p.rect) {
+      ctx.translate(p.x,p.y); ctx.rotate(p.angle||0);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.r,-p.r*0.5,p.r*2,p.r);
+    } else {
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=p.color; ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+
+function drawPopups() {
+  popups.forEach(p => {
+    ctx.save(); ctx.globalAlpha = p.life;
+    ctx.font = `bold ${18+(1-p.life)*10}px 'Bebas Neue',cursive`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=12;
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  });
+}
+
+
+function drawScoreboard() {
+  // Always centered on screen regardless of camera
+  const sx = W * 0.5, sy=4, sw=200, sh=70;
+  // Cables
+  ctx.strokeStyle='#555'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(sx-sw*0.3,sy); ctx.lineTo(sx-sw*0.3,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx+sw*0.3,sy); ctx.lineTo(sx+sw*0.3,0); ctx.stroke();
+  // Gold top frame
+  ctx.fillStyle='#c8980a'; ctx.beginPath(); ctx.roundRect(sx-sw/2-4,sy-4,sw+8,8,3); ctx.fill();
+  // Board body — no header text, just gold frame
+  ctx.fillStyle='#1a1a2e'; ctx.beginPath(); ctx.roundRect(sx-sw/2,sy,sw,sh,5); ctx.fill();
+  ctx.strokeStyle='#c8980a'; ctx.lineWidth=2; ctx.beginPath(); ctx.roundRect(sx-sw/2,sy,sw,sh,5); ctx.stroke();
+  // Score panels with Home/Away labels
+  const panW=42, panH=28, panY=sy+22;
+  const panels = [[-1,'HOME'],[1,'AWAY']];
+  panels.forEach(([side, label]) => {
+    const px2 = sx + side*38 - panW/2;
+    const pcx  = px2 + panW/2;
+    // Label centered above panel
+    ctx.fillStyle='#fff'; ctx.font="bold 11px 'Bebas Neue',cursive"; ctx.textAlign='center';
+    ctx.fillText(label, pcx, panY - 3);
+    // Panel
+    ctx.fillStyle='#0a0a1a'; ctx.beginPath(); ctx.roundRect(px2,panY,panW,panH,3); ctx.fill();
+    ctx.strokeStyle='#cc3300'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.roundRect(px2,panY,panW,panH,3); ctx.stroke();
+    // Score digits centered in panel
+    ctx.fillStyle='#ff4400'; ctx.font="bold 22px 'Bebas Neue',cursive"; ctx.textAlign='center';
+    const displayScore = side === -1 ? String(score).padStart(2,'0') : String(score2).padStart(2,'0');
+    ctx.fillText(displayScore, pcx, panY + panH*0.78);
+  });
+  // Colon centered between panels
+  ctx.fillStyle='#cc3300'; ctx.font="bold 24px 'Bebas Neue',cursive"; ctx.textAlign='center';
+  ctx.fillText(':', sx, panY + panH*0.76);
+  // Timer — label + panel centered on sx
+  const timerStr = Math.max(0, timeLeft).toFixed(1);
+  const tpW=62, tpH=18, tpY=panY+panH+8;
+  ctx.fillStyle='#fff'; ctx.font="bold 11px 'Bebas Neue',cursive"; ctx.textAlign='center';
+  ctx.fillText('TIME', sx, tpY - 3);
+  ctx.fillStyle='#0a1a0a'; ctx.beginPath(); ctx.roundRect(sx-tpW/2, tpY, tpW, tpH, 3); ctx.fill();
+  ctx.strokeStyle='#00cc44'; ctx.lineWidth=1; ctx.beginPath(); ctx.roundRect(sx-tpW/2, tpY, tpW, tpH, 3); ctx.stroke();
+  ctx.fillStyle = timeLeft <= 15 ? '#ff4444' : '#00ff66';
+  ctx.font="bold 13px 'Bebas Neue',cursive"; ctx.textAlign='center';
+  ctx.fillText(timerStr, sx, tpY + tpH*0.78);
+}
+
+// ──────────────────────────────────────────────────────────────
+//  MAIN LOOP
+// ──────────────────────────────────────────────────────────────
+let lastTime = 0;
+function loop(ts) {
+  lastTime = ts;
+  ctx.clearRect(0, 0, W, H);
+
+  if (state === 'paused') {
+    // Just redraw the scene frozen, don't update anything
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+    drawCourt();
+    drawHoopPole(); drawBackboard(); drawHoop(HOOP_X, hoopY);
+    drawHoopPoleLeft(); drawBackboardLeft(); drawHoop(L_HOOP_X, hoopY);
+    drawParticles();
+    drawPlayer2(); drawPlayer();
+    if (ball) drawBall(ball);
+    ctx.restore();
+    drawScoreboard();
+    requestAnimationFrame(loop);
+    return;
+  }
+
+  // Apply camera transform — all world objects drawn offset by -cameraX
+  ctx.save();
+  ctx.translate(-cameraX, 0);
+
+  drawCourt();
+
+  // Right hoop
+  drawHoopPole();
+  drawBackboard();
+  drawHoop(HOOP_X, hoopY);
+
+  // Left hoop (mirrored)
+  drawHoopPoleLeft();
+  drawBackboardLeft();
+  drawHoop(L_HOOP_X, hoopY);
+
+  if (state === 'playing') {
+    updatePlayer();
+    updateBall();
+    updatePlayer2();
+    tickTimer();
+  } else if (state === 'jumpball') {
+    updateJumpball();
+  }
+  updateParticles();
+  updatePopups();
+
+  drawParticles();
+  drawPlayer2();
+  drawPlayer();
+  if (ball) drawBall(ball);
+
+  ctx.restore(); // end camera transform
+
+  drawScoreboard(); // screen space
+  drawPopups(); // popups drawn in screen space
+
+  // Online multiplayer: sync inputs/state
+  if (onlineConnected) {
+    sendGuestInputs();
+    sendHostState();
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ──────────────────────────────────────────────────────────────
+//  CHARACTER SELECT
+// ──────────────────────────────────────────────────────────────
+const CHARACTERS = [
+  { name: 'CAROLINA', team: 'UNC',      jersey: '#f5f5f5', jerseyB: '#4a90d9', shorts: '#4a90d9', shortsD: '#2a6aaa', shoe: '#f0f0f0', shoeTrim: '#4a90d9', skin: '#8B5E3C', skinLt: '#A67850', hair: 'braids',  num: '8'  },
+  { name: 'DUKE',     team: 'DUKE',     jersey: '#f5f5f5', jerseyB: '#003087', shorts: '#003087', shortsD: '#001f5a', shoe: '#f0f0f0', shoeTrim: '#003087', skin: '#c8956a', skinLt: '#e0a87a', hair: 'afro',   num: '2'  },
+  { name: 'KENTUCKY', team: 'UK',       jersey: '#0033a0', jerseyB: '#ffffff', shorts: '#0033a0', shortsD: '#001e6a', shoe: '#ffffff', shoeTrim: '#0033a0', skin: '#6b3a1f', skinLt: '#8a5030', hair: 'waves',  num: '00' },
+  { name: 'KANSAS',   team: 'KU',       jersey: '#e8003d', jerseyB: '#ffffff', shorts: '#e8003d', shortsD: '#b50030', shoe: '#f0f0f0', shoeTrim: '#002147', skin: '#7a4a28', skinLt: '#9a6440', hair: 'coils',  num: '22', labelColor: '#e8003d' },
+  { name: 'MICHIGAN', team: 'MICH',     jersey: '#FFCB05', jerseyB: '#00274C', shorts: '#00274C', shortsD: '#001830', shoe: '#f0f0f0', shoeTrim: '#FFCB05', skin: '#b07840', skinLt: '#c89458', hair: 'locs',   num: '3',  labelColor: '#FFCB05' },
+];
+
+let selectedChar1 = 0; // Player 1 character index (Carolina)
+let selectedChar2 = 1; // Player 2 character index (Duke)
+
+function drawCharPreview(canvasEl, charIdx, facingRight) {
+  const c = canvasEl.getContext('2d');
+  const CW = canvasEl.width, CH = canvasEl.height;
+  c.clearRect(0, 0, CW, CH);
+  const ch = CHARACTERS[charIdx];
+
+  const sc = (CH * 0.82) / 118;
+  const cx = CW / 2, cy = CH * 0.88;
+  const dir = facingRight ? 1 : -1;
+
+  c.save();
+  c.translate(cx, cy);
+  c.scale(dir * sc, sc);
+
+  const SKIN=ch.skin, SKIN_LT=ch.skinLt, JERSEY=ch.jersey, JERSEY_B=ch.jerseyB;
+  const SHORTS=ch.shorts, SHORTS_D=ch.shortsD, SHOE=ch.shoe, SHOE_T=ch.shoeTrim;
+
+  // Shadow
+  c.beginPath(); c.ellipse(0,3,24,7,0,0,Math.PI*2); c.fillStyle='rgba(0,0,0,0.3)'; c.fill();
+
+  // Left leg
+  c.save(); c.translate(-7,-26);
+  c.fillStyle=SHOE; c.beginPath(); c.roundRect(-14,22,20,16,[2,2,6,6]); c.fill();
+  c.strokeStyle='#ccc'; c.lineWidth=1; c.stroke();
+  c.fillStyle=SHOE_T; c.beginPath(); c.roundRect(-14,35,20,3,[0,0,6,6]); c.fill();
+  c.fillStyle=SHORTS; c.beginPath(); c.roundRect(-5,0,11,16,[4,4,0,0]); c.fill();
+  c.strokeStyle=SHORTS_D; c.lineWidth=1; c.stroke();
+  c.fillStyle=SKIN; c.beginPath(); c.roundRect(-4,15,9,12,[0,0,2,2]); c.fill();
+  c.restore();
+  // Right leg
+  c.save(); c.translate(7,-26);
+  c.fillStyle=SHOE; c.beginPath(); c.roundRect(-6,22,20,16,[2,2,6,6]); c.fill();
+  c.strokeStyle='#ccc'; c.lineWidth=1; c.stroke();
+  c.fillStyle=SHOE_T; c.beginPath(); c.roundRect(-6,35,20,3,[0,0,6,6]); c.fill();
+  c.fillStyle=SHORTS; c.beginPath(); c.roundRect(-5,0,11,16,[4,4,0,0]); c.fill();
+  c.strokeStyle=SHORTS_D; c.lineWidth=1; c.stroke();
+  c.fillStyle=SKIN; c.beginPath(); c.roundRect(-4,15,9,12,[0,0,2,2]); c.fill();
+  c.restore();
+
+  // Body
+  c.fillStyle=JERSEY; c.beginPath(); c.roundRect(-17,-56,34,30,[10,10,5,5]); c.fill();
+  c.strokeStyle=JERSEY_B; c.lineWidth=2; c.stroke();
+  c.fillStyle=JERSEY_B; c.fillRect(-17,-56,4,30); c.fillRect(13,-56,4,30);
+  c.fillStyle=JERSEY_B; c.font="bold 15px 'Bebas Neue',cursive"; c.textAlign='center';
+  c.save(); c.scale(dir,1); c.fillText(ch.num,0,-34); c.restore();
+  c.fillStyle=JERSEY_B; c.font="bold 5px 'Bebas Neue',cursive";
+  c.save(); c.scale(dir,1); c.fillText(ch.team,0,-44); c.restore();
+
+  // Arms relaxed
+  c.fillStyle=SKIN;
+  c.save(); c.translate(-17,-46); c.rotate(0.25); c.beginPath(); c.roundRect(0,-4,18,9,4); c.fill(); c.restore();
+  c.save(); c.translate(17,-46); c.rotate(-0.25); c.beginPath(); c.roundRect(0,-4,18,9,4); c.fill(); c.restore();
+
+  // Braids behind head
+  if (ch.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a', HAIR_SHEEN='#4a2a12';
+    [[-2,-94,-3,-60,2],[3,-94,4,-60,2],[-7,-93,-8,-62,1.8],[7,-93,8,-62,1.8],[-12,-90,-14,-64,1.8],[12,-90,14,-64,1.8],[-16,-87,-22,-66,1.7],[16,-87,22,-66,1.7]].forEach(([rx,ry,ex,ey,w])=>{
+      const g=c.createLinearGradient(rx,ry,ex,ey); g.addColorStop(0,HAIR); g.addColorStop(0.5,HAIR_SHEEN); g.addColorStop(1,HAIR_MID);
+      c.strokeStyle=g; c.lineWidth=w; c.lineCap='round';
+      c.beginPath(); c.moveTo(rx,ry); c.quadraticCurveTo(rx+(ex-rx)*0.3,ry+(ey-ry)*0.6,ex,ey); c.stroke();
+      c.beginPath(); c.arc(ex,ey,w*0.85,0,Math.PI*2); c.fillStyle=HAIR_MID; c.fill();
+    });
+  } else if (ch.hair === 'locs') {
+    // All locs drawn here — before head so they appear behind face
+    const HAIR='#2a1800', HAIR_MID='#1a0e04';
+    // Crown base blobs
+    [[-8,-90,7],[2,-93,7.5],[11,-91,7],[-16,-86,6],[18,-85,6],[-1,-87,6.5]].forEach(([hx,hy,hr])=>{
+      c.beginPath(); c.arc(hx,hy,hr,0,Math.PI*2); c.fillStyle=HAIR; c.fill();
+    });
+    // Locs: [rootX,rootY, ctrlX,ctrlY, tipX,tipY, width]
+    [
+      // Far left edge — curves sideways-down
+      [-16,-86, -32,-82, -24,-68, 3.0],
+      [-14,-87, -30,-82, -22,-66, 2.8],
+      // Gap filler: transition between edge and left-side
+      [-12,-88, -31,-100, -19,-69, 2.8],
+      // Left side — upward arcs
+      [-10,-90, -30,-118, -16,-70, 2.8],
+      [-8,-91,  -27,-119, -13,-71, 2.8],
+      [-6,-91,  -24,-121, -10,-72, 2.8],
+      [-4,-92,  -20,-122,  -8,-73, 2.8],
+      [-2,-92,  -16,-123,  -5,-74, 2.8],
+      // Center-left
+      [0,-93,   -12,-124,  -3,-74, 2.8],
+      [2,-93,   -8,-125,   -1,-74, 2.8],
+      // Center-right
+      [4,-93,    4,-125,    2,-74, 2.8],
+      [6,-93,    8,-125,    5,-74, 2.8],
+      // Right side — upward arcs
+      [8,-92,   16,-123,   8,-73, 2.8],
+      [10,-90,  24,-121,  14,-70, 2.8],
+      [12,-90,  27,-119,  16,-70, 2.8],
+      [14,-89,  30,-118,  18,-68, 2.8],
+      // Gap filler: transition between right-side and edge
+      [16,-88,  33,-100,  22,-68, 2.8],
+      // Far right edge — curves sideways-down
+      [18,-86,  32,-82,   24,-66, 2.8],
+      [20,-83,  34,-80,   26,-62, 3.0],
+      // Face-framing
+      [-19,-82, -32,-98,  -23,-66, 2.6],
+      [-20,-79, -31,-93,  -23,-63, 2.5],
+      [-21,-76, -30,-88,  -23,-63, 2.4],
+      [19,-82,  32,-98,   23,-66, 2.6],
+      [20,-79,  31,-93,   23,-63, 2.5],
+      [21,-76,  30,-88,   23,-63, 2.4],
+    ].forEach(([x1,y1,cx,cy,x2,y2,w])=>{
+      const g=c.createLinearGradient(x1,y1,x2,y2); g.addColorStop(0,HAIR); g.addColorStop(1,HAIR_MID);
+      c.strokeStyle=g; c.lineWidth=w; c.lineCap='round';
+      c.beginPath(); c.moveTo(x1,y1); c.quadraticCurveTo(cx,cy,x2,y2); c.stroke();
+      c.beginPath(); c.arc(x2,y2,w*0.6,0,Math.PI*2); c.fillStyle=HAIR_MID; c.fill();
+    });
+    c.lineCap='butt'; c.lineWidth=1;
+  }
+
+  // Head
+  c.fillStyle=SKIN; c.beginPath(); c.roundRect(-6,-62,12,10,3); c.fill();
+  c.beginPath(); c.arc(0,-74,22,0,Math.PI*2); c.fillStyle=SKIN; c.fill();
+  c.strokeStyle=SKIN_LT; c.lineWidth=2; c.stroke();
+
+  // Hair over head
+  if (ch.hair === 'braids') {
+    const HAIR='#1a0e06', HAIR_MID='#2e1a0a';
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    c.fillStyle=HAIR; c.beginPath(); c.arc(0,-74,23,aL,aR,false); c.arc(0,-74,18,aR,aL,true); c.closePath(); c.fill();
+    [[-19,-84,-26,-68,1.6],[19,-84,26,-68,1.6],[-20,-82,-28,-72,1.5],[20,-82,28,-72,1.5]].forEach(([rx,ry,ex,ey,w])=>{
+      const g=c.createLinearGradient(rx,ry,ex,ey); g.addColorStop(0,HAIR); g.addColorStop(0.5,'#4a2a12'); g.addColorStop(1,HAIR_MID);
+      c.strokeStyle=g; c.lineWidth=w; c.lineCap='round';
+      c.beginPath(); c.moveTo(rx,ry); c.quadraticCurveTo(rx+(ex-rx)*0.3,ry+(ey-ry)*0.6,ex,ey); c.stroke();
+      c.beginPath(); c.arc(ex,ey,w*0.85,0,Math.PI*2); c.fillStyle=HAIR_MID; c.fill();
+    });
+  } else if (ch.hair === 'afro') {
+    const HAIR='#1a0a02', HAIR_D='#0d0501', HAIR_M='#2e1208';
+    c.fillStyle=HAIR;
+    c.beginPath(); c.ellipse(1,-95,18,14,0,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(-18,-92,8,10,-0.15,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(19,-91,7,9,0.15,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(-9,-104,9,7,-0.2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(9,-104,8,7,0.2,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(1,-107,7,6,0,0,Math.PI*2); c.fill();
+    [[-22,-94,5],[-21,-84,4],[-14,-108,5],[-2,-110,5],[8,-109,5],[20,-100,5],[23,-90,5],[23,-83,4]].forEach(([hx,hy,hr])=>{c.beginPath();c.arc(hx,hy,hr,0,Math.PI*2);c.fillStyle=HAIR;c.fill();});
+    [[-10,-98,2.5,HAIR_D],[0,-100,2.5,HAIR_D],[10,-98,2.5,HAIR_D],[-5,-105,2,HAIR_D],[5,-105,2,HAIR_D],[-15,-93,2,HAIR_M],[15,-93,2,HAIR_M],[0,-94,2,HAIR_M]].forEach(([hx,hy,hr,col])=>{c.beginPath();c.arc(hx,hy,hr,0,Math.PI*2);c.fillStyle=col;c.fill();});
+    c.fillStyle=HAIR; c.beginPath(); c.roundRect(-17,-84,34,6,3); c.fill();
+  } else if (ch.hair === 'short') {
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    c.fillStyle='#2a1000'; c.beginPath(); c.arc(0,-74,23,aL,aR,false); c.arc(0,-74,19,aR,aL,true); c.closePath(); c.fill();
+  } else if (ch.hair === 'fade') {
+    c.fillStyle='#1a0a02'; c.beginPath(); c.arc(0,-74,23,Math.PI*1.1,Math.PI*1.9,false); c.arc(0,-74,16,Math.PI*1.9,Math.PI*1.1,true); c.closePath(); c.fill();
+  } else if (ch.hair === 'coils') {
+    // Short tight coils — low natural with visible coil texture
+    const HAIR='#1a0802', HAIR_D='#0d0401', HAIR_H='#2e1208';
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    // Base cap
+    c.fillStyle=HAIR;
+    c.beginPath(); c.arc(0,-74,23,aL,aR,false); c.arc(0,-74,17,aR,aL,true); c.closePath(); c.fill();
+    // Coil bumps covering crown
+    [[-14,-84,5],[-6,-88,5.5],[3,-90,5.5],[12,-88,5],[18,-83,4.5],[-19,-81,4],
+     [-10,-91,4.5],[1,-94,5],[10,-92,4.5],[17,-87,4]].forEach(([hx,hy,hr])=>{
+      c.beginPath(); c.arc(hx,hy,hr,0,Math.PI*2); c.fillStyle=HAIR; c.fill();
+    });
+    // Dark coil centers for texture
+    [[-14,-84,2.5],[-6,-88,2.5],[3,-90,2.5],[12,-88,2.5],[18,-83,2],
+     [-10,-91,2],[1,-94,2.5],[10,-92,2],[17,-87,2]].forEach(([hx,hy,hr])=>{
+      c.beginPath(); c.arc(hx,hy,hr,0,Math.PI*2); c.fillStyle=HAIR_D; c.fill();
+    });
+  } else if (ch.hair === 'waves') {
+    // Short natural waves — tight coil cap hugging the head
+    const HAIR='#1a0a02', HAIR_LT='#2e1a0a';
+    // Hair cap — crescent covering top of head only, no mask needed
+    const aR=Math.atan2(-87-(-74),16), aL=Math.atan2(-87-(-74),-16);
+    c.fillStyle=HAIR;
+    c.beginPath(); c.arc(0,-74,23,aL,aR,false); c.arc(0,-74,17,aR,aL,true); c.closePath(); c.fill();
+    // Poof bumps along crown
+    [[-10,-93,5],[-2,-97,5],[7,-95,5],[15,-90,5],[-17,-88,5]].forEach(([hx,hy,hr])=>{
+      c.beginPath(); c.arc(hx,hy,hr,0,Math.PI*2); c.fill();
+    });
+    // Wave groove lines
+    c.strokeStyle=HAIR_LT; c.lineWidth=1.5; c.lineCap='round';
+    [[-20,-82,-8,-86,4,-82],[-3,-85,8,-89,18,-85],[-16,-87,-5,-91,7,-88],[8,-88,17,-92,22,-88]].forEach(([x1,y1,x2,y2,x3,y3])=>{
+      c.beginPath(); c.moveTo(x1,y1); c.quadraticCurveTo(x2,y2,x3,y3); c.stroke();
+    });
+  } else if (ch.hair === 'locs') {
+    // Hair cap only — locs drawn before head
+    const HAIR='#2a1800', aRl=Math.atan2(-87-(-74),16), aLl=Math.atan2(-87-(-74),-16);
+    c.fillStyle=HAIR; c.beginPath(); c.arc(0,-74,23,aLl,aRl,false); c.arc(0,-74,17,aRl,aLl,true); c.closePath(); c.fill();
+  }
+
+  // Reset context state after all hair branches
+  c.lineCap = 'butt'; c.lineWidth = 1;
+  // Eyes
+  c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(-8,-76,7,8,-0.1,0,Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(8,-76,7,8,0.1,0,Math.PI*2); c.fill();
+  c.strokeStyle='#5a3010'; c.lineWidth=1.5;
+  c.beginPath(); c.ellipse(-8,-76,7,8,-0.1,0,Math.PI*2); c.stroke();
+  c.beginPath(); c.ellipse(8,-76,7,8,0.1,0,Math.PI*2); c.stroke();
+  c.fillStyle='#1a0800';
+  c.beginPath(); c.arc(-7,-75,4,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(9,-75,4,0,Math.PI*2); c.fill();
+  c.fillStyle='#fff';
+  c.beginPath(); c.arc(-5.5,-77,1.5,0,Math.PI*2); c.fill();
+  c.beginPath(); c.arc(10.5,-77,1.5,0,Math.PI*2); c.fill();
+
+  // Eyebrows
+  c.strokeStyle='#2a1000'; c.lineWidth=3; c.lineCap='round';
+  c.beginPath(); c.moveTo(-15,-86); c.quadraticCurveTo(-8,-90,-1,-86); c.stroke();
+  c.beginPath(); c.moveTo(1,-86); c.quadraticCurveTo(8,-90,15,-86); c.stroke();
+
+  // Nose
+  c.strokeStyle=SKIN_LT; c.lineWidth=2; c.lineCap='round';
+  c.beginPath(); c.moveTo(2,-70); c.quadraticCurveTo(6,-67,3,-65); c.stroke();
+
+  // Mouth - big smile
+  c.strokeStyle='#5a3010'; c.lineWidth=2.5; c.lineCap='round';
+  c.beginPath(); c.moveTo(-10,-64); c.quadraticCurveTo(0,-56,10,-64); c.stroke();
+  c.fillStyle='#fff';
+  c.beginPath(); c.moveTo(-9,-64); c.quadraticCurveTo(0,-58,9,-64); c.closePath(); c.fill();
+  c.strokeStyle='#ddd'; c.lineWidth=0.5;
+  c.beginPath(); c.moveTo(0,-64); c.lineTo(0,-60); c.stroke();
+  c.strokeStyle='#5a3010'; c.lineWidth=2.5;
+  c.beginPath(); c.moveTo(-10,-64); c.quadraticCurveTo(0,-56,10,-64); c.stroke();
+  c.lineCap='butt';
+
+  // Goatee for locs character — thin horizontal strip across chin
+  if (ch.hair === 'locs') {
+    const G='#3d2008';
+    c.fillStyle=G;
+    // Mustache above lip
+    c.beginPath(); c.ellipse(-4,-66.5,4,1.5,0.1,0,Math.PI*2); c.fill();
+    c.beginPath(); c.ellipse(4,-66.5,4,1.5,-0.1,0,Math.PI*2); c.fill();
+    // Chin strap — horizontal bar across chin
+    c.beginPath(); c.roundRect(-7,-57,14,3,[2,2,2,2]); c.fill();
+  }
+
+  c.restore();
+
+  const teamEl = document.getElementById(canvasEl.id === 'char1-canvas' ? 'char1-team' : 'char2-team');
+  if (teamEl) {
+    teamEl.textContent = ch.name;
+  }
+}
+
+function showCharSelect() {
+  document.getElementById('mode-select').style.display = 'none';
+  document.getElementById('char-select').style.display = 'flex';
+  refreshCharPreviews();
+}
+
+function refreshCharPreviews() {
+  drawCharPreview(document.getElementById('char1-canvas'), selectedChar1, true);
+  drawCharPreview(document.getElementById('char2-canvas'), selectedChar2, false);
+}
+
+document.getElementById('char1-left').addEventListener('click',  () => { selectedChar1 = (selectedChar1 - 1 + CHARACTERS.length) % CHARACTERS.length; refreshCharPreviews(); });
+document.getElementById('char1-right').addEventListener('click', () => { selectedChar1 = (selectedChar1 + 1) % CHARACTERS.length; refreshCharPreviews(); });
+document.getElementById('char2-left').addEventListener('click',  () => { selectedChar2 = (selectedChar2 - 1 + CHARACTERS.length) % CHARACTERS.length; refreshCharPreviews(); });
+document.getElementById('char2-right').addEventListener('click', () => { selectedChar2 = (selectedChar2 + 1) % CHARACTERS.length; refreshCharPreviews(); });
+document.getElementById('char-select-btn').addEventListener('click', () => {
+  document.getElementById('char-select').style.display = 'none';
+  startGame(pendingMode);
+});
+function startTimer() {
+  timeLeft = 60; updateHUD();
+  // Timer is now driven from the main loop via tickTimer()
+}
+
+let lastTimerTick = null;
+function tickTimer() {
+  if (state !== 'playing') { lastTimerTick = null; return; }
+
+  // Ball is "in play" when it's active (in the air or physics) and not waiting for handoff
+  const ballInPlay = ball && ball.active && !waitingHandoff;
+  // Also count as in-play while player has possession and is moving/acting
+  const inPlay = ballInPlay || (!waitingHandoff && possession !== 0 && possession !== undefined);
+
+  if (!inPlay) { lastTimerTick = null; return; }
+
+  const now = performance.now();
+  if (lastTimerTick === null) { lastTimerTick = now; return; }
+  const elapsed = (now - lastTimerTick) / 1000;
+  lastTimerTick = now;
+  timeLeft = Math.max(0, timeLeft - elapsed);
+  updateHUD();
+  if (timeLeft <= 0) {
+    clearInterval(timerInterval);
+    // If ball is in flight, wait for it to land before ending
+    if (ball && ball.active) {
+      const waitEnd = setInterval(() => {
+        if (!ball || !ball.active) { clearInterval(waitEnd); endGame(); }
+      }, 50);
+    } else {
+      endGame();
+    }
+  }
+}
+
+function startGame(mode) {
+  twoPlayerMode = (mode === 2);
+  score = 0; score2 = 0; timeLeft = 60;
+  isOvertime = false;
+  particles = []; popups = []; netSwish = 0;
+  hoopMoveTimer = 0;
+  lastTimerTick = null;
+
+  // Players start equidistant from halfcourt
+  const JUMPBALL_OFFSET = 80;
+  player.x = WORLD_W / 2 - JUMPBALL_OFFSET; player.y = PLAYER_Y;
+  player.vy = 0; player.hasJumped = false; player.canShoot = false;
+  player.dunkAnim = 0; player.faceDir = 1;
+  player.windmill = -1; player.windmillDone = false;
+  player.stealAnim = 0; player.stealPause = 0;
+
+  player2.x = WORLD_W / 2 + JUMPBALL_OFFSET; player2.y = PLAYER_Y;
+  player2.vy = 0; player2.vx = 0; player2.hasJumped = false; player2.canShoot = false;
+  player2.dunkAnim = 0; player2.aiTimer = 60; player2.aiState = 'move'; player2.shotType = null;
+  player2.windmill = -1; player2.windmillDone = false;
+  player2.stealAnim = 0; player2.stealPause = 0; player2.stillTimer = 0;
+  keys['Space'] = false; spaceDown = false; kDown = false; fDown = false; isDragging = false;
+  possession = 0; waitingHandoff = false;
+
+  // Ball sits at halfcourt
+  if (ball && ball._reboundTimer) clearTimeout(ball._reboundTimer);
+  ball = {
+    x: WORLD_W / 2, y: PLAYER_Y - BALL_R,
+    vx: 0, vy: 0, r: BALL_R,
+    active: false, scored: false, trail: [],
+    isDunk: false, isThree: false,
+    arc: null, physics: false, rebounding: false,
+    isMake: false, _reboundTimer: null
+  };
+
+  state = 'jumpball';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('p2-controls-hint').style.display = twoPlayerMode ? 'inline' : 'none';
+  updateHUD();
+
+  // 0.5s pause then launch ball upward
+  setTimeout(() => {
+    if (state !== 'jumpball') return;
+    ball.active = true;
+    ball.physics = true;
+    ball.vx = 0;
+    ball.vy = -16; // strong upward throw
+    showComboToast('JUMP BALL!');
+  }, 500);
+}
+
+function updateJumpball() {
+  // ── PLAYER 1 ─────────────────────────────────────────────────
+  player.vx = 0;
+  if (keys['ArrowLeft'])  { player.x -= PLAYER_SPEED; player.vx = -PLAYER_SPEED; player.faceDir = -1; }
+  if (keys['ArrowRight']) { player.x += PLAYER_SPEED; player.vx =  PLAYER_SPEED; player.faceDir =  1; }
+  if (!twoPlayerMode) {
+    if (keys['KeyA']) { player.x -= PLAYER_SPEED; player.vx = -PLAYER_SPEED; player.faceDir = -1; }
+    if (keys['KeyD']) { player.x += PLAYER_SPEED; player.vx =  PLAYER_SPEED; player.faceDir =  1; }
+  }
+  player.x = Math.max(16, Math.min(R_POLE_WALL, player.x));
+  // Gravity
+  if (player.hasJumped) {
+    player.vy += GRAVITY; player.y += player.vy;
+    if (player.y >= PLAYER_Y) { player.y = PLAYER_Y; player.vy = 0; player.hasJumped = false; }
+  }
+
+  // ── PLAYER 2 ─────────────────────────────────────────────────
+  if (twoPlayerMode) {
+    player2.vx = 0;
+    if (keys['KeyA']) { player2.x -= PLAYER_SPEED; player2.vx = -PLAYER_SPEED; player2.faceDir = -1; }
+    if (keys['KeyD']) { player2.x += PLAYER_SPEED; player2.vx =  PLAYER_SPEED; player2.faceDir =  1; }
+    player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+  } else {
+    // AI: drift toward ball and jump when ball is near
+    if (ball && ball.active) {
+      const diff = player2.x - ball.x;
+      if (Math.abs(diff) > PLAYER_SPEED) {
+        player2.vx = diff > 0 ? -PLAYER_SPEED : PLAYER_SPEED;
+        player2.x += player2.vx;
+      }
+      // AI jumps when ball is close horizontally and descending
+      if (!player2.hasJumped && Math.abs(diff) < 60 && ball.vy > 0) {
+        player2.vy = JUMP_VY; player2.hasJumped = true;
+      }
+    }
+    if (player2.vx > 0) player2.faceDir = 1;
+    else if (player2.vx < 0) player2.faceDir = -1;
+    player2.x = Math.max(L_POLE_WALL, Math.min(WORLD_W - 16, player2.x));
+  }
+  // Gravity for player 2
+  if (player2.hasJumped) {
+    player2.vy += GRAVITY; player2.y += player2.vy;
+    if (player2.y >= PLAYER_Y) { player2.y = PLAYER_Y; player2.vy = 0; player2.hasJumped = false; }
+  }
+
+  // ── BALL PHYSICS ─────────────────────────────────────────────
+  if (ball && ball.active && ball.physics) {
+    ball.vy += GRAVITY;
+    ball.x  += ball.vx;
+    ball.y  += ball.vy;
+    if (ball.y < BALL_R) { ball.y = BALL_R; ball.vy = Math.abs(ball.vy) * 0.5; }
+    if (ball.y >= PLAYER_Y - BALL_R) {
+      ball.y = PLAYER_Y - BALL_R;
+      ball.vy = -ball.vy * 0.55;
+      ball.vx  =  ball.vx * 0.8;
+      if (Math.abs(ball.vy) < 0.8) { ball.vy = 0; ball.vx = 0; }
+    }
+
+    // Check pickup — wider vertical range so players can catch in air
+    const dx1 = Math.abs(ball.x - player.x);
+    const dy1 = Math.abs(ball.y - (player.y - 52));
+    if (dx1 < 40 && dy1 < 70) {
+      ball.active = false; ball.physics = false;
+      ball.x = player.x; ball.y = player.y - 52; ball.trail = [];
+      possession = 1; endJumpball(); return;
+    }
+    const dx2 = Math.abs(ball.x - player2.x);
+    const dy2 = Math.abs(ball.y - (player2.y - 52));
+    if (dx2 < 40 && dy2 < 70) {
+      ball.active = false; ball.physics = false;
+      ball.x = player2.x; ball.y = player2.y - 52; ball.trail = [];
+      possession = 2; endJumpball(); return;
+    }
+  }
+
+  // Camera centers on halfcourt
+  const targetCam = WORLD_W / 2 - W / 2;
+  cameraX += (Math.max(0, Math.min(WORLD_W - W, targetCam)) - cameraX) * 0.1;
+  updateHUD();
+}
+
+function endJumpball() {
+  state = 'playing';
+  startTimer();
+}
+
+function startOvertime() {
+  isOvertime = true;
+  timeLeft = 15;
+  particles = []; popups = []; netSwish = 0;
+  lastTimerTick = null;
+
+  const JUMPBALL_OFFSET = 80;
+  player.x = WORLD_W / 2 - JUMPBALL_OFFSET; player.y = PLAYER_Y;
+  player.vy = 0; player.hasJumped = false; player.canShoot = false;
+  player.dunkAnim = 0; player.faceDir = 1;
+  player.windmill = -1; player.windmillDone = false;
+  player.stealAnim = 0; player.stealPause = 0;
+
+  player2.x = WORLD_W / 2 + JUMPBALL_OFFSET; player2.y = PLAYER_Y;
+  player2.vy = 0; player2.vx = 0; player2.hasJumped = false; player2.canShoot = false;
+  player2.dunkAnim = 0; player2.aiTimer = 60; player2.aiState = 'move'; player2.shotType = null;
+  player2.windmill = -1; player2.windmillDone = false;
+  player2.stealAnim = 0; player2.stealPause = 0; player2.stillTimer = 0;
+  keys['Space'] = false; spaceDown = false; kDown = false; fDown = false;
+  possession = 0; waitingHandoff = false;
+
+  if (ball && ball._reboundTimer) clearTimeout(ball._reboundTimer);
+  ball = {
+    x: WORLD_W / 2, y: PLAYER_Y - BALL_R,
+    vx: 0, vy: 0, r: BALL_R,
+    active: false, scored: false, trail: [],
+    isDunk: false, isThree: false,
+    arc: null, physics: false, rebounding: false,
+    isMake: false, _reboundTimer: null
+  };
+
+  state = 'jumpball';
+  updateHUD();
+  showComboToast('OVERTIME! 🔥');
+
+  setTimeout(() => {
+    if (state !== 'jumpball') return;
+    ball.active = true;
+    ball.physics = true;
+    ball.vx = 0;
+    ball.vy = -16;
+    showComboToast('JUMP BALL!');
+  }, 1000);
+}
+
+function endGame() {
+  // If tied, always start another overtime
+  if (score === score2) {
+    startOvertime();
+    return;
+  }
+  state = 'gameover'; resetBall(); updateHUD();
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('overlay-title').textContent = isOvertime ? 'OVERTIME OVER' : 'GAME OVER';
+  document.getElementById('overlay-title').textContent = 'GAME OVER';
+  document.getElementById('overlay-sub').textContent = '';
+  document.getElementById('final-score-display').style.display = 'none';
+  document.getElementById('final-scoreboard').style.display = 'flex';
+  document.getElementById('sb-score1').textContent = String(score).padStart(2, '0');
+  document.getElementById('sb-score2').textContent = String(score2).padStart(2, '0');
+  const winner1 = document.getElementById('sb-winner1');
+  const winner2 = document.getElementById('sb-winner2');
+  winner1.textContent = ''; winner2.textContent = '';
+  if (score > score2)       { winner1.textContent = '🏆 WINNER'; }
+  else if (score2 > score)  { winner2.textContent = '🏆 WINNER'; }
+  else                      { winner1.textContent = '🤝 TIE'; winner2.textContent = '🤝 TIE'; }
+  document.querySelector('#sb-p1 .sb-team-label').textContent = CHARACTERS[selectedChar1].name;
+  document.querySelector('#sb-p2 .sb-team-label').textContent = CHARACTERS[selectedChar2].name;
+  document.getElementById('mode-select').style.display = 'none';
+  document.getElementById('start-btn').style.display = 'inline-block';
+  document.getElementById('zone-indicator').innerHTML = '';
+}
+
+
+let pendingMode = 1;
+document.getElementById('btn-1p').addEventListener('click', () => { pendingMode = 1; showCharSelect(); });
+document.getElementById('btn-2p').addEventListener('click', () => { pendingMode = 2; showCharSelect(); });
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('mode-select').style.display = 'flex';
+  document.getElementById('start-btn').style.display = 'none';
+  document.getElementById('final-score-display').style.display = 'none';
+  document.getElementById('final-scoreboard').style.display = 'none';
+  document.getElementById('char-select').style.display = 'none';
+  document.getElementById('overlay-title').textContent = 'HOOPS HEROES';
+  document.getElementById('overlay-sub').textContent = '';
+});
+updateHUD();
+
+// ── PAUSE ──────────────────────────────────────────────────────
+function togglePause() {
+  if (state === 'playing') {
+    state = 'paused';
+    document.getElementById('pause-menu').classList.add('visible');
+  } else if (state === 'paused') {
+    state = 'playing';
+    document.getElementById('pause-menu').classList.remove('visible');
+  }
+}
+
+document.getElementById('pause-continue').addEventListener('click', () => {
+  if (state === 'paused') togglePause();
+});
+
+document.getElementById('pause-menu-btn').addEventListener('click', () => {
+  state = 'idle';
+  document.getElementById('pause-menu').classList.remove('visible');
+  resetBall();
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('overlay-title').textContent = 'HOOPS HEROES';
+  document.getElementById('overlay-sub').textContent = '';
+  document.getElementById('mode-select').style.display = 'flex';
+  document.getElementById('char-select').style.display = 'none';
+  document.getElementById('final-scoreboard').style.display = 'none';
+  document.getElementById('start-btn').style.display = 'none';
+});
+
+// ── TOUCH CONTROLS ────────────────────────────────────────────
+if (isMobile) {
+  const tc = document.getElementById('touch-controls');
+  const gw = document.getElementById('game-wrap');
+  const wrap = document.getElementById('page-scale-wrap');
+
+  if (tc && gw && wrap) {
+    tc.style.display = 'flex';
+
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+
+    // Scale game to fill full screen width exactly
+    const scale = vw / W;
+
+    const scaledW = Math.round(W * scale);
+    const scaledH = Math.round(H * scale);
+
+    // Center game vertically with buttons below
+    const BTNS_H = 220;
+    const totalBlock = scaledH + BTNS_H;
+    const topStart = Math.max(20, Math.round((vh - totalBlock) / 2));
+
+    // Hide header
+    const header = document.getElementById('header');
+    if (header) header.style.display = 'none';
+
+    // Wrap fills screen
+    wrap.style.position = 'fixed';
+    wrap.style.inset    = '0';
+    wrap.style.overflow = 'hidden';
+
+    // Force game-wrap and canvas to their natural pixel size so transform scales correctly
+    gw.style.width   = W + 'px';
+    gw.style.height  = H + 'px';
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+
+    // Game: fills width, positioned absolutely
+    gw.style.position        = 'absolute';
+    gw.style.left            = '0';
+    gw.style.top             = topStart + 'px';
+    gw.style.transformOrigin = 'top left';
+    gw.style.transform       = `scale(${scale})`;
+    gw.style.margin          = '0';
+
+    // Buttons: full width, just below game
+    tc.style.position = 'absolute';
+    tc.style.top      = (topStart + scaledH + 8) + 'px';
+    tc.style.left     = '0';
+    tc.style.width    = vw + 'px';
+    tc.style.padding  = '0 8px';
+    tc.style.boxSizing = 'border-box';
+  }
+
+  // Left/right: held keys
+  const setKey = (code, val) => { keys[code] = val; };
+  const addHeld = (id, code) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', e => { e.preventDefault(); setKey(code, true); }, { passive: false });
+    el.addEventListener('touchend',   e => { e.preventDefault(); setKey(code, false); }, { passive: false });
+    el.addEventListener('touchcancel',e => { e.preventDefault(); setKey(code, false); }, { passive: false });
+  };
+  addHeld('btn-left',  'ArrowLeft');
+  addHeld('btn-right', 'ArrowRight');
+
+  // Jump: call doPlayer1Jump directly
+  const jumpEl = document.getElementById('btn-jump');
+  if (jumpEl) {
+    jumpEl.addEventListener('touchstart', e => {
+      e.preventDefault();
+      spaceDown = false; // reset so second press works
+      doPlayer1Jump();
+    }, { passive: false });
+    jumpEl.addEventListener('touchend', e => {
+      e.preventDefault();
+      spaceDown = false;
+    }, { passive: false });
+  }
+
+  // Steal: fire as a single keydown tap
+  const stealEl = document.getElementById('btn-steal');
+  if (stealEl) {
+    stealEl.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (state === 'playing') {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyJ', bubbles: true }));
+      }
+    }, { passive: false });
+  }
+}
+
+// Scale page to fit viewport width on large screens (fixes Safari sizing)
+(function() {
+  const wrap = document.getElementById('page-scale-wrap');
+  const TARGET_W = 780; // content width including padding
+  function applyScale() {
+    const vw = window.innerWidth;
+    const scale = vw < TARGET_W ? vw / TARGET_W : 1;
+    wrap.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+  }
+  applyScale();
+  window.addEventListener('resize', applyScale);
+})();
+
+// ── ONLINE MULTIPLAYER ─────────────────────────────────────────
+const SERVER_URL = 'https://hoops-heroes-server.onrender.com';
+
+function lobbyStatus(msg) {
+  document.getElementById('lobby-status').textContent = msg;
+}
+
+function connectWS(onOpen) {
+  if (ws) { try { ws.close(); } catch(e){} }
+  ws = new WebSocket(SERVER_URL);
+  ws.onopen = onOpen;
+  ws.onerror = () => lobbyStatus('Connection failed. Check server URL.');
+  ws.onmessage = e => handleServerMsg(JSON.parse(e.data));
+  ws.onclose = () => {
+    onlineConnected = false;
+    if (state === 'playing' || state === 'jumpball') {
+      showComboToast('Opponent disconnected!');
+      setTimeout(() => {
+        state = 'idle';
+        document.getElementById('overlay').classList.remove('hidden');
+        document.getElementById('mode-select').style.display = 'none';
+        document.getElementById('online-lobby').style.display = 'flex';
+        lobbyStatus('Connection lost.');
+      }, 2000);
+    }
+  };
+}
+
+function handleServerMsg(msg) {
+  if (msg.type === 'created') {
+    document.getElementById('room-code-display').style.display = 'block';
+    document.getElementById('room-code-display').textContent = msg.code;
+    document.getElementById('waiting-msg').style.display = 'block';
+    lobbyStatus('Share this code with your opponent:');
+  }
+  else if (msg.type === 'guest_joined') {
+    lobbyStatus('Opponent joined! Starting...');
+    document.getElementById('waiting-msg').style.display = 'none';
+    setTimeout(() => startOnlineGame('host'), 800);
+  }
+  else if (msg.type === 'joined') {
+    lobbyStatus('Joined! Waiting for host to start...');
+  }
+  else if (msg.type === 'input') {
+    if (onlineRole === 'host' && msg.keys) {
+      keys['KeyA'] = msg.keys.left;
+      keys['KeyD'] = msg.keys.right;
+      if (msg.keys.jumpPressed) window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+      if (msg.keys.stealPressed) window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyG', bubbles: true }));
+    }
+  }
+  else if (msg.type === 'state') {
+    if (onlineRole === 'guest' && msg.data) applyRemoteState(msg.data);
+  }
+  else if (msg.type === 'error') {
+    lobbyStatus(msg.message);
+  }
+  else if (msg.type === 'disconnected') {
+    lobbyStatus(msg.message);
+    onlineConnected = false;
+  }
+}
+
+function startOnlineGame(role) {
+  onlineRole = role;
+  onlineConnected = true;
+  twoPlayerMode = true;
+  document.getElementById('online-lobby').style.display = 'none';
+  selectedChar1 = 0; selectedChar2 = 1;
+  startGame(2);
+}
+
+function getGameState() {
+  return {
+    px: player.x, py: player.y, pvx: player.vx, pvy: player.vy,
+    pFace: player.faceDir, pJump: player.hasJumped, pDunk: player.dunkAnim,
+    pWind: player.windmill, pSteal: player.stealAnim,
+    p2x: player2.x, p2y: player2.y, p2vx: player2.vx, p2vy: player2.vy,
+    p2Face: player2.faceDir, p2Jump: player2.hasJumped, p2Dunk: player2.dunkAnim,
+    p2Wind: player2.windmill, p2Steal: player2.stealAnim,
+    bx: ball ? ball.x : 0, by: ball ? ball.y : 0,
+    bActive: ball ? ball.active : false, bPhysics: ball ? ball.physics : false,
+    bScored: ball ? ball.scored : false,
+    score, score2, timeLeft, state, possession, camX: cameraX
+  };
+}
+
+function applyRemoteState(d) {
+  if (!ball) return;
+  player.x = d.px; player.y = d.py; player.vx = d.pvx; player.vy = d.pvy;
+  player.faceDir = d.pFace; player.hasJumped = d.pJump;
+  player.dunkAnim = d.pDunk; player.windmill = d.pWind; player.stealAnim = d.pSteal;
+  player2.x = d.p2x; player2.y = d.p2y; player2.vx = d.p2vx; player2.vy = d.p2vy;
+  player2.faceDir = d.p2Face; player2.hasJumped = d.p2Jump;
+  player2.dunkAnim = d.p2Dunk; player2.windmill = d.p2Wind; player2.stealAnim = d.p2Steal;
+  ball.x = d.bx; ball.y = d.by;
+  ball.active = d.bActive; ball.physics = d.bPhysics; ball.scored = d.bScored;
+  score = d.score; score2 = d.score2; timeLeft = d.timeLeft;
+  cameraX = d.camX; possession = d.possession;
+  if (d.state !== state) state = d.state;
+  updateHUD();
+}
+
+let lastGuestJump = false, lastGuestSteal = false, stateFrameCount = 0;
+
+function sendGuestInputs() {
+  if (!onlineConnected || onlineRole !== 'guest' || !ws) return;
+  const jumpPressed = keys['KeyW'] && !lastGuestJump;
+  const stealPressed = keys['KeyG'] && !lastGuestSteal;
+  lastGuestJump = keys['KeyW'];
+  lastGuestSteal = keys['KeyG'];
+  ws.send(JSON.stringify({ type: 'input', keys: { left: !!keys['KeyA'], right: !!keys['KeyD'], jumpPressed, stealPressed } }));
+}
+
+function sendHostState() {
+  if (!onlineConnected || onlineRole !== 'host' || !ws) return;
+  stateFrameCount++;
+  if (stateFrameCount % 2 !== 0) return;
+  ws.send(JSON.stringify({ type: 'state', data: getGameState() }));
+}
+
+document.getElementById('btn-online').addEventListener('click', () => {
+  document.getElementById('mode-select').style.display = 'none';
+  document.getElementById('online-lobby').style.display = 'flex';
+  document.getElementById('room-code-display').style.display = 'none';
+  document.getElementById('waiting-msg').style.display = 'none';
+  lobbyStatus('');
+});
+
+document.getElementById('btn-create-room').addEventListener('click', () => {
+  lobbyStatus('Connecting...');
+  connectWS(() => { ws.send(JSON.stringify({ type: 'create' })); });
+});
+
+document.getElementById('btn-join-room').addEventListener('click', () => {
+  const code = document.getElementById('join-code-input').value.toUpperCase().trim();
+  if (code.length < 1) { lobbyStatus('Enter a room code'); return; }
+  lobbyStatus('Connecting...');
+  connectWS(() => { ws.send(JSON.stringify({ type: 'join', code })); });
+});
+
+document.getElementById('btn-back-lobby').addEventListener('click', () => {
+  if (ws) { try { ws.close(); } catch(e){} ws = null; }
+  document.getElementById('online-lobby').style.display = 'none';
+  document.getElementById('mode-select').style.display = 'flex';
+  lobbyStatus('');
+});
+</script>
+</div><!-- end page-scale-wrap -->
+</body>
+</html>
