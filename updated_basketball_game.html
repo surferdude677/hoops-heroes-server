@@ -3412,8 +3412,11 @@ function endGame() {
     return;
   }
   state = 'gameover'; resetBall(); updateHUD();
+  // Notify guest
+  if (onlineConnected && onlineRole === 'host' && ws) {
+    ws.send(JSON.stringify({ type: 'gameover', score1: score, score2: score2 }));
+  }
   document.getElementById('overlay').classList.remove('hidden');
-  document.getElementById('overlay-title').textContent = isOvertime ? 'OVERTIME OVER' : 'GAME OVER';
   document.getElementById('overlay-title').textContent = 'GAME OVER';
   document.getElementById('overlay-sub').textContent = '';
   document.getElementById('final-score-display').style.display = 'none';
@@ -3431,6 +3434,12 @@ function endGame() {
   document.getElementById('mode-select').style.display = 'none';
   document.getElementById('start-btn').style.display = 'inline-block';
   document.getElementById('zone-indicator').innerHTML = '';
+
+  // Tell guest game is over
+  if (onlineConnected && onlineRole === 'host' && ws) {
+    ws.send(JSON.stringify({ type: 'gameover', score, score2,
+      name1: CHARACTERS[selectedChar1].name, name2: CHARACTERS[selectedChar2].name }));
+  }
 }
 
 
@@ -3438,6 +3447,20 @@ let pendingMode = 1;
 document.getElementById('btn-1p').addEventListener('click', () => { pendingMode = 1; showCharSelect(); });
 document.getElementById('btn-2p').addEventListener('click', () => { pendingMode = 2; showCharSelect(); });
 document.getElementById('start-btn').addEventListener('click', () => {
+  if (onlineConnected) {
+    document.getElementById('final-scoreboard').style.display = 'none';
+    document.getElementById('start-btn').style.display = 'none';
+    if (onlineRole === 'host') {
+      startGame(2);
+      if (ws) ws.send(JSON.stringify({ type: 'restart' }));
+    } else if (onlineRole === 'guest') {
+      // Guest requests restart from host
+      if (ws) ws.send(JSON.stringify({ type: 'request_restart' }));
+      lobbyStatus('Waiting for host to restart...');
+      document.getElementById('online-lobby').style.display = 'flex';
+    }
+    return;
+  }
   document.getElementById('mode-select').style.display = 'flex';
   document.getElementById('start-btn').style.display = 'none';
   document.getElementById('final-score-display').style.display = 'none';
@@ -3583,7 +3606,7 @@ if (isMobile) {
 })();
 
 // ── ONLINE MULTIPLAYER ─────────────────────────────────────────
-const SERVER_URL = 'wss://hoops-heroes-server.onrender.com';
+const SERVER_URL = 'wss://YOUR-SERVER-URL.onrender.com';
 
 function lobbyStatus(msg) {
   document.getElementById('lobby-status').textContent = msg;
@@ -3632,12 +3655,46 @@ function handleServerMsg(msg) {
     if (onlineRole === 'host' && msg.keys) {
       keys['KeyA'] = msg.keys.left;
       keys['KeyD'] = msg.keys.right;
-      if (msg.keys.jumpPressed) window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+      if (msg.keys.jumpPressed) {
+        fDown = false; // reset so KeyW fires fresh
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true }));
+        setTimeout(() => { fDown = false; window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', bubbles: true })); }, 50);
+      }
       if (msg.keys.stealPressed) window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyG', bubbles: true }));
     }
   }
   else if (msg.type === 'state') {
     if (onlineRole === 'guest' && msg.data) applyRemoteState(msg.data);
+  }
+  else if (msg.type === 'guest_wants_restart') {
+    // Host is notified that guest wants to play again
+    showComboToast('Opponent wants to play again!');
+  }
+  else if (msg.type === 'restart') {
+    document.getElementById('final-scoreboard').style.display = 'none';
+    document.getElementById('start-btn').style.display = 'none';
+    startGame(2);
+  }
+  else if (msg.type === 'gameover') {
+    if (onlineRole === 'guest') {
+      state = 'gameover';
+      document.getElementById('overlay').classList.remove('hidden');
+      document.getElementById('overlay-title').textContent = 'GAME OVER';
+      document.getElementById('overlay-sub').textContent = '';
+      document.getElementById('final-score-display').style.display = 'none';
+      document.getElementById('final-scoreboard').style.display = 'flex';
+      document.getElementById('sb-score1').textContent = String(msg.score1).padStart(2, '0');
+      document.getElementById('sb-score2').textContent = String(msg.score2).padStart(2, '0');
+      const w1 = document.getElementById('sb-winner1');
+      const w2 = document.getElementById('sb-winner2');
+      w1.textContent = ''; w2.textContent = '';
+      if (msg.score1 > msg.score2)      { w1.textContent = '🏆 WINNER'; }
+      else if (msg.score2 > msg.score1) { w2.textContent = '🏆 WINNER'; }
+      document.querySelector('#sb-p1 .sb-team-label').textContent = CHARACTERS[selectedChar1].name;
+      document.querySelector('#sb-p2 .sb-team-label').textContent = CHARACTERS[selectedChar2].name;
+      document.getElementById('mode-select').style.display = 'none';
+      document.getElementById('start-btn').style.display = 'inline-block';
+    }
   }
   else if (msg.type === 'error') {
     lobbyStatus(msg.message);
@@ -3659,31 +3716,54 @@ function startOnlineGame(role) {
 
 function getGameState() {
   return {
+    // Player 1
     px: player.x, py: player.y, pvx: player.vx, pvy: player.vy,
     pFace: player.faceDir, pJump: player.hasJumped, pDunk: player.dunkAnim,
-    pWind: player.windmill, pSteal: player.stealAnim,
+    pWind: player.windmill, pWindDone: player.windmillDone, pSteal: player.stealAnim,
+    pCanShoot: player.canShoot,
+    // Player 2
     p2x: player2.x, p2y: player2.y, p2vx: player2.vx, p2vy: player2.vy,
     p2Face: player2.faceDir, p2Jump: player2.hasJumped, p2Dunk: player2.dunkAnim,
-    p2Wind: player2.windmill, p2Steal: player2.stealAnim,
+    p2Wind: player2.windmill, p2WindDone: player2.windmillDone, p2Steal: player2.stealAnim,
+    p2CanShoot: player2.canShoot,
+    // Ball
     bx: ball ? ball.x : 0, by: ball ? ball.y : 0,
+    bvx: ball ? ball.vx : 0, bvy: ball ? ball.vy : 0,
     bActive: ball ? ball.active : false, bPhysics: ball ? ball.physics : false,
-    bScored: ball ? ball.scored : false,
-    score, score2, timeLeft, state, possession, camX: cameraX
+    bScored: ball ? ball.scored : false, bIsDunk: ball ? ball.isDunk : false,
+    bIsThree: ball ? ball.isThree : false, bIsMake: ball ? ball.isMake : false,
+    bRebounding: ball ? ball.rebounding : false,
+    // Game state
+    score, score2, timeLeft, state, possession,
+    camX: cameraX, isOvertime, waitingHandoff,
+    netSwish
   };
 }
 
 function applyRemoteState(d) {
   if (!ball) return;
+  // Player 1
   player.x = d.px; player.y = d.py; player.vx = d.pvx; player.vy = d.pvy;
   player.faceDir = d.pFace; player.hasJumped = d.pJump;
-  player.dunkAnim = d.pDunk; player.windmill = d.pWind; player.stealAnim = d.pSteal;
+  player.dunkAnim = d.pDunk; player.windmill = d.pWind;
+  player.windmillDone = d.pWindDone; player.stealAnim = d.pSteal;
+  player.canShoot = d.pCanShoot;
+  // Player 2
   player2.x = d.p2x; player2.y = d.p2y; player2.vx = d.p2vx; player2.vy = d.p2vy;
   player2.faceDir = d.p2Face; player2.hasJumped = d.p2Jump;
-  player2.dunkAnim = d.p2Dunk; player2.windmill = d.p2Wind; player2.stealAnim = d.p2Steal;
-  ball.x = d.bx; ball.y = d.by;
+  player2.dunkAnim = d.p2Dunk; player2.windmill = d.p2Wind;
+  player2.windmillDone = d.p2WindDone; player2.stealAnim = d.p2Steal;
+  player2.canShoot = d.p2CanShoot;
+  // Ball
+  ball.x = d.bx; ball.y = d.by; ball.vx = d.bvx; ball.vy = d.bvy;
   ball.active = d.bActive; ball.physics = d.bPhysics; ball.scored = d.bScored;
+  ball.isDunk = d.bIsDunk; ball.isThree = d.bIsThree;
+  ball.isMake = d.bIsMake; ball.rebounding = d.bRebounding;
+  // Game
   score = d.score; score2 = d.score2; timeLeft = d.timeLeft;
   cameraX = d.camX; possession = d.possession;
+  isOvertime = d.isOvertime; waitingHandoff = d.waitingHandoff;
+  if (d.netSwish > 0) netSwish = d.netSwish;
   if (d.state !== state) state = d.state;
   updateHUD();
 }
